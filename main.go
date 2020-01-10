@@ -10,11 +10,13 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	prompt "github.com/c-bata/go-prompt"
 	sys "golang.org/x/sys/unix"
 )
+
+var app_pid string
+var tids []int
 
 func plist() error {
 	cmd := exec.Command("ps", "-e")
@@ -27,16 +29,22 @@ func plist() error {
 
 	re := regexp.MustCompile(`\s+`)
 	line, err := out.ReadString('\n')
+	pids := []string{}
 	for err == nil && len(line) != 0 {
 		s := strings.Split(re.ReplaceAllString(string(line), " "), " ")
 		pid := s[1]
 		cmd := s[8]
 		if pid != "PID" && cmd != "" && cmd != "ps" && cmd != "sh" && cmd != "medit" {
-			fmt.Printf("pid: %s, cmd: %s\n", pid, cmd)
+			fmt.Printf("cmd: %s, pid: %s\n", cmd, pid)
+			pids = append(pids, pid)
 		}
 		line, err = out.ReadString('\n')
 	}
 
+	if len(pids) == 1 {
+		fmt.Printf("attach target PID has been set to %s.\n", pids[0])
+		app_pid = pids[0]
+	}
 	return nil
 }
 
@@ -47,7 +55,7 @@ func attach(pid string) {
 		log.Fatal(err)
 	}
 
-	tids := []int{}
+	tids = []int{}
 	for _, t := range tidinfo {
 		tid, _ := strconv.Atoi(t.Name())
 		tids = append(tids, tid)
@@ -58,9 +66,9 @@ func attach(pid string) {
 		fmt.Printf("Attached TID: %d\n", tid)
 	}
 
-	fmt.Println("5s sleep.....")
-	time.Sleep(5 * time.Second)
+}
 
+func detach() {
 	for _, tid := range tids {
 		sys.PtraceDetach(tid)
 		fmt.Printf("Detached TID: %d\n", tid)
@@ -76,7 +84,17 @@ func executor(t string) {
 
 	if strings.HasPrefix(t, "attach") {
 		slice := strings.Split(t, " ")
-		attach(slice[1])
+		if len(slice) > 1 {
+			attach(slice[1])
+		} else if app_pid != "" {
+			attach(app_pid)
+		} else {
+			fmt.Printf("Cannot attach because PID cannot be specified.")
+		}
+	}
+
+	if t == "detach" {
+		detach()
 	}
 
 	if t == "exit" {
@@ -89,6 +107,7 @@ func completer(t prompt.Document) []prompt.Suggest {
 	return []prompt.Suggest{
 		{Text: "ps"},
 		{Text: "attach <pid>"},
+		{Text: "detach"},
 		{Text: "exit"},
 	}
 }
