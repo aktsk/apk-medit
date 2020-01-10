@@ -1,29 +1,43 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/mitchellh/go-ps"
 
 	prompt "github.com/c-bata/go-prompt"
 	sys "golang.org/x/sys/unix"
 )
 
-func plist() {
-	processes, err := ps.Processes()
+func plist() error {
+	cmd := exec.Command("ps", "-e")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
 	if err != nil {
-		return
+		return err
 	}
 
-	for i, p := range processes {
-		fmt.Printf("%d : %+v\n", i, p)
+	re := regexp.MustCompile(`\s+`)
+	line, err := out.ReadString('\n')
+	for err == nil && len(line) != 0 {
+		s := strings.Split(re.ReplaceAllString(string(line), " "), " ")
+		pid := s[1]
+		cmd := s[8]
+		if pid != "PID" && cmd != "" && cmd != "ps" && cmd != "sh" && cmd != "medit" {
+			fmt.Printf("pid: %s, cmd: %s\n", pid, cmd)
+		}
+		line, err = out.ReadString('\n')
 	}
+
+	return nil
 }
 
 func attach(pid string) {
@@ -55,7 +69,9 @@ func attach(pid string) {
 
 func executor(t string) {
 	if t == "ps" {
-		plist()
+		if err := plist(); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if strings.HasPrefix(t, "attach") {
@@ -72,7 +88,7 @@ func executor(t string) {
 func completer(t prompt.Document) []prompt.Suggest {
 	return []prompt.Suggest{
 		{Text: "ps"},
-		{Text: "attach"},
+		{Text: "attach <pid>"},
 		{Text: "exit"},
 	}
 }
