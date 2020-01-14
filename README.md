@@ -15,5 +15,5 @@ $ adb shell
 $ pm list packages
 $ run-as <target-package-name>
 $ cp /data/local/tmp/medit ./medit
-$ ./medit <pid>
+$ ./medit
 ```
