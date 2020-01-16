@@ -8,9 +8,9 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
 	prompt "github.com/c-bata/go-prompt"
 	sys "golang.org/x/sys/unix"
@@ -74,22 +74,12 @@ func attach(pid string) {
 			if err := sys.PtraceAttach(tid); err == nil {
 				fmt.Printf("Attached TID: %d\n", tid)
 			} else {
-				fmt.Println(err)
+				fmt.Printf("attach failed: %s\n", err)
 			}
 			if err := wait(tid); err != nil {
-				fmt.Printf("Failed wait TID: %d\n", tid)
+				fmt.Printf("Failed wait TID: %d, %s\n", tid, err)
 			}
 		}
-
-		//syscall.RawSyscall(syscall.SYS_WAITPID, uintptr(-1), 0, sys.WALL) ない！！！
-		/*
-			        for _, tid := range tids {
-						if err := wait(tid); err == nil {
-							fmt.Printf("Wait TID: %d\n", tid)
-						} else {
-							fmt.Printf("Failed wait TID: %d\n", tid)
-						}
-			        }*/
 
 		isAttached = true
 
@@ -98,59 +88,40 @@ func attach(pid string) {
 	}
 }
 
-func detach() {
+func detach() error {
 	if !isAttached {
 		fmt.Println("Already detached.")
-		return
+		return nil
 	}
 
 	for _, tid := range tids {
-		err := sys.PtraceDetach(tid)
-		if err == nil {
-			fmt.Printf("Detached TID: %d\n", tid)
+		if err := sys.PtraceDetach(tid); err != nil {
+			return fmt.Errorf("%d detach failed. %s\n", tid, err)
 		} else {
-			fmt.Println(err)
+			fmt.Printf("Detached TID: %d\n", tid)
 		}
 	}
+
 	isAttached = false
-}
-
-func status(pid int, comm string) rune {
-	f, err := os.Open(fmt.Sprintf("/proc/%d/stat", pid))
-	if err != nil {
-		return '\000'
-	}
-	defer f.Close()
-
-	var (
-		p     int
-		state rune
-	)
-
-	// The second field of /proc/pid/stat is the name of the task in parenthesis.
-	// The name of the task is the base name of the executable for this process limited to TASK_COMM_LEN characters
-	// Since both parenthesis and spaces can appear inside the name of the task and no escaping happens we need to read the name of the executable first
-	// See: include/linux/sched.c:315 and include/linux/sched.c:1510
-	fmt.Fscanf(f, "%d ("+comm+")  %c", &p, &state)
-	return state
+	return nil
 }
 
 func wait(pid int) error {
 	var s sys.WaitStatus
-	for {
-		wpid, err := sys.Wait4(pid, &s, sys.WNOHANG|0x40000000|0, nil)
-		if err != nil {
-			return err
-		}
-		if wpid != 0 {
-			return err
-		}
-		// Status == Zombie
-		// if status(pid, dbp.os.comm) == 'Z' {
-		// 	return nil
-		// }
-		time.Sleep(200 * time.Millisecond)
+
+	wpid, err := sys.Wait4(pid, &s, sys.WALL, nil)
+	if err != nil {
+		return err
 	}
+
+	if wpid != pid {
+		return fmt.Errorf("wait failed: wpid = %d", wpid)
+	}
+	if !s.Stopped() {
+		return fmt.Errorf("wait failed: status is not stopped: ")
+	}
+
+	return nil
 }
 
 func executor(in string) {
@@ -158,19 +129,30 @@ func executor(in string) {
 		if err := plist(); err != nil {
 			log.Fatal(err)
 		}
+
 	} else if strings.HasPrefix(in, "attach") {
 		slice := strings.Split(in, " ")
+		var pid string
 		if len(slice) > 1 {
-			attach(slice[1])
+			pid = slice[1]
 		} else if appPID != "" {
-			attach(appPID)
+			pid = appPID
 		} else {
-			fmt.Println("Cannot attach because PID cannot be specified.")
+			fmt.Println("PID cannot be specified.")
 		}
+		attach(pid)
+
 	} else if in == "detach" {
-		detach()
+		if err := detach(); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
 	} else if in == "exit" {
 		os.Exit(0)
+
+	} else if in == "" {
+
 	} else {
 		fmt.Println("Command not found.")
 	}
@@ -179,15 +161,18 @@ func executor(in string) {
 
 func completer(t prompt.Document) []prompt.Suggest {
 	return []prompt.Suggest{
+		{Text: "ps"},
 		{Text: "attach"},
 		{Text: "attach <pid>"},
 		{Text: "detach"},
 		{Text: "exit"},
-		{Text: "ps"},
 	}
 }
 
 func main() {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	if err := plist(); err != nil {
 		log.Fatal(err)
 	}
