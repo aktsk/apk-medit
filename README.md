@@ -2,11 +2,12 @@
 Medit is a simple memory search and edit tool on Android app.
 
 # How to Build
+After the build is complete, if adb is connected, place the built binary in `/data/local/tmp/` on Android.
 
 ```
-$ make SHELL=$SHELL
+$ make
 GOOS=linux GOARCH=arm64 GOARM=7 go build -o medit
-adb push medit /data/local/tmp/medit
+/bin/sh -c "adb push medit /data/local/tmp/medit"
 medit: 1 file pushed. 23.7 MB/s (3131205 bytes in 0.126s)
 ```
 
@@ -14,7 +15,7 @@ medit: 1 file pushed. 23.7 MB/s (3131205 bytes in 0.126s)
 
 ```
 $ adb shell
-$ pm list packages
+$ pm list packages # to check <target-package-name>
 $ run-as <target-package-name>
 $ cp /data/local/tmp/medit ./medit
 $ ./medit

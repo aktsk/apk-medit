@@ -11,4 +11,4 @@ clean:
 	rm $(BINARY_NAME)
 
 deploy:
-	adb push $(BINARY_NAME) /data/local/tmp/$(BINARY_NAME)
+	$(SHELL) -c "adb push $(BINARY_NAME) /data/local/tmp/$(BINARY_NAME)"
