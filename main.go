@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io/ioutil"
@@ -24,8 +25,7 @@ func plist() error {
 	cmd := exec.Command("ps", "-e")
 	var out bytes.Buffer
 	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return err
 	}
 
@@ -50,10 +50,10 @@ func plist() error {
 	return nil
 }
 
-func attach(pid string) {
+func attach(pid string) error {
 	if isAttached {
 		fmt.Println("Already attached.")
-		return
+		return nil
 	}
 
 	fmt.Printf("Target PID: %s\n", pid)
@@ -86,6 +86,52 @@ func attach(pid string) {
 	} else if os.IsNotExist(err) {
 		fmt.Println("PID must be an integer that exists.")
 	}
+	return nil
+}
+
+func find(pid string, targetVal string) error {
+	// search value in /proc/<pid>/maps
+	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
+	addrRanges, err := getWritableAddrRanges(mapsPath)
+	if err != nil {
+		return err
+	}
+	fmt.Println(addrRanges)
+	return nil
+}
+
+func getWritableAddrRanges(mapsPath string) ([]string, error) {
+	addrRanges := []string{}
+	ignorePaths := []string{"/vendor/lib64/", "/system/lib64/", "/system/framework/"}
+	file, err := os.Open(mapsPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		meminfo := strings.Fields(line)
+		addrRange := meminfo[0]
+		permission := meminfo[1]
+		if permission[0] == 'r' && permission[1] == 'w' && permission[3] != 's' {
+			ignoreFlag := false
+			if len(meminfo) >= 6 {
+				filePath := meminfo[5]
+				for _, ignorePath := range ignorePaths {
+					if strings.HasPrefix(filePath, ignorePath) {
+						ignoreFlag = true
+						break
+					}
+				}
+			}
+			if !ignoreFlag {
+				addrRanges = append(addrRanges, addrRange)
+			}
+		}
+	}
+	return addrRanges, nil
 }
 
 func detach() error {
@@ -142,6 +188,16 @@ func executor(in string) {
 		}
 		attach(pid)
 
+	} else if strings.HasPrefix(in, "find") {
+		slice := strings.Split(in, " ")
+		var targetVal string
+		if len(slice) > 1 {
+			targetVal = slice[1]
+		} else {
+			fmt.Println("Target value cannot be specified.")
+		}
+		find(appPID, targetVal)
+
 	} else if in == "detach" {
 		if err := detach(); err != nil {
 			fmt.Println(err)
@@ -163,6 +219,7 @@ func completer(t prompt.Document) []prompt.Suggest {
 	return []prompt.Suggest{
 		{Text: "attach", Description: "Attach to the specified process."},
 		{Text: "attach <pid>", Description: "Attach to the process specified on the command line."},
+		{Text: "find <int>", Description: "TODO"},
 		{Text: "detach", Description: "Detach from the attached process."},
 		{Text: "ps", Description: "Find the target process and if there is only one, specify it as the target."},
 		{Text: "exit"},
