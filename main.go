@@ -161,10 +161,10 @@ func executor(in string) {
 
 func completer(t prompt.Document) []prompt.Suggest {
 	return []prompt.Suggest{
-		{Text: "ps"},
-		{Text: "attach"},
-		{Text: "attach <pid>"},
-		{Text: "detach"},
+		{Text: "attach", Description: "Attach to the specified process."},
+		{Text: "attach <pid>", Description: "Attach to the process specified on the command line."},
+		{Text: "detach", Description: "Detach from the attached process."},
+		{Text: "ps", Description: "Find the target process and if there is only one, specify it as the target."},
 		{Text: "exit"},
 	}
 }
@@ -180,6 +180,12 @@ func main() {
 	p := prompt.New(
 		executor,
 		completer,
+		prompt.OptionTitle("medit: simple MEmory eDIT tool"),
+		prompt.OptionPrefix("> "),
+		prompt.OptionInputTextColor(prompt.Cyan),
+		prompt.OptionPrefixTextColor(prompt.DarkBlue),
+		prompt.OptionPreviewSuggestionTextColor(prompt.Green),
+		prompt.OptionDescriptionTextColor(prompt.DarkGray),
 	)
 	p.Run()
 }
