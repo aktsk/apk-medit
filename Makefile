@@ -1,6 +1,7 @@
 GOCMD=go
 GOBUILD=$(GOCMD) build
 BINARY_NAME=medit
+DEVICES:=$(shell adb devices | grep -c 'device$$')
 
 all: build deploy
 
@@ -11,4 +12,8 @@ clean:
 	rm $(BINARY_NAME)
 
 deploy:
+ifeq ($(DEVICES), 1)
 	$(SHELL) -c "adb push $(BINARY_NAME) /data/local/tmp/$(BINARY_NAME)"
+else
+	@echo 'Android device is not connected....'
+endif

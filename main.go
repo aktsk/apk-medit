@@ -90,13 +90,16 @@ func attach(pid string) error {
 }
 
 func find(pid string, targetVal string) error {
-	// search value in /proc/<pid>/maps
+	// search value in /proc/<pid>/mem
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
 	addrRanges, err := getWritableAddrRanges(mapsPath)
 	if err != nil {
 		return err
 	}
 	fmt.Println(addrRanges)
+
+	//memPath := fmt.Sprintf("/proc/%s/mem", pid)
+
 	return nil
 }
 
