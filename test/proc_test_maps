@@ -1,0 +1,12 @@
+1f8bda000-1fabda000 rw-s 1f8bda000 00:10 12439                           /dev/mali0
+1fabda000-1fb3da000 rw-s 1fabda000 00:10 12439                           /dev/mali0
+1fb3da000-1fbbda000 rw-s 1fb3da000 00:10 12439                           /dev/mali0
+1fe000000-1ff000000 rw-s 1fe000000 00:10 12439                           /dev/mali0
+1ff0ab000-1ff0cc000 ---s 1ff0ab000 00:10 12439                           /dev/mali0
+75d6721000-75d6722000 r--p 00004000 fd:00 6908                           /system/lib64/libpowermanager.so
+75d6722000-75d6723000 rw-p 00005000 fd:00 6908                           /system/lib64/libpowermanager.so
+75d6905000-75d6968000 r-xp 00000000 fd:00 6659                           /system/lib64/libaudioclient.so
+75d7484000-75d7485000 r--p 00000000 00:00 0                              [anon:linker_alloc]
+75d75f2000-75d75f8000 rw-p 00000000 00:00 0 
+7fcf0ff000-7fcf0ff000 rw-p 00000000 00:00 0 
+7fcf100000-7fcf8ff000 rw-p 00000000 00:00 0                              [stack]
