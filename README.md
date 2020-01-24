@@ -20,3 +20,10 @@ $ run-as <target-package-name>
 $ cp /data/local/tmp/medit ./medit
 $ ./medit
 ```
+
+# Test
+Tests work only linux now...
+
+```
+$ go test -v ./test
+```

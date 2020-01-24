@@ -3,7 +3,7 @@ on: [push]
 jobs:
 
   build:
-    name: Build
+    name: Test and Build
     runs-on: ubuntu-latest
     steps:
 
@@ -30,3 +30,6 @@ jobs:
 
     - name: Test
       run: go test -v ./test
+
+    - name: Build
+      run: GOOS=linux GOARCH=arm64 GOARM=7 go build -o medit
