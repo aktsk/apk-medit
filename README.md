@@ -1,4 +1,6 @@
 # medit
+![](https://github.com/aktsk/medit/workflows/Go/badge.svg)
+
 Medit is a simple memory search and edit tool on Android app.
 
 # How to Build
