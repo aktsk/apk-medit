@@ -22,7 +22,6 @@ $ ./medit
 ```
 
 # Test
-Tests work only linux now...
 
 ```
 $ go test -v ./test

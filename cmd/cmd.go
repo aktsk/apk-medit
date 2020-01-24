@@ -155,7 +155,10 @@ func Detach() error {
 func wait(pid int) error {
 	var s sys.WaitStatus
 
-	wpid, err := sys.Wait4(pid, &s, sys.WALL, nil)
+	// sys.WALL = 0x40000000 on Linux(ARM64)
+	// Using sys.WALL does not pass build on macOS.
+	// https://github.com/golang/go/blob/50bd1c4d4eb4fac8ddeb5f063c099daccfb71b26/src/syscall/zerrors_linux_arm.go#L1203
+	wpid, err := sys.Wait4(pid, &s, 0x40000000, nil)
 	if err != nil {
 		return err
 	}
