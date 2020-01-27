@@ -1,9 +1,13 @@
 GOCMD=go
+GOTEST=$(GOCMD) test -v
 GOBUILD=$(GOCMD) build
 BINARY_NAME=medit
 DEVICES:=$(shell adb devices | grep -c 'device$$')
 
 all: build deploy
+
+test:
+	$(GOTEST) ./cmd
 
 build:
 	GOOS=linux GOARCH=arm64 GOARM=7 $(GOBUILD) -o $(BINARY_NAME)
