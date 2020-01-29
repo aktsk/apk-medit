@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/aktsk/medit/cmd"
@@ -36,9 +37,9 @@ func executor(in string) {
 
 	} else if strings.HasPrefix(in, "find") {
 		slice := strings.Split(in, " ")
-		var targetVal string
+		var targetVal uint64
 		if len(slice) > 1 {
-			targetVal = slice[1]
+			targetVal, _ = strconv.ParseUint(slice[1], 64, 10)
 		} else {
 			fmt.Println("Target value cannot be specified.")
 		}

@@ -3,7 +3,9 @@ package cmd
 import (
 	"bufio"
 	"bytes"
+	"encoding/binary"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -86,29 +88,28 @@ func Attach(pid string) error {
 	return nil
 }
 
-func Find(pid string, targetVal string) error {
+func Find(pid string, targetVal uint64) error {
 	// search value in /proc/<pid>/mem
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
-	addrRanges, err := GetWritableAddrRanges(mapsPath)
+	addrRanges, err := getWritableAddrRanges(mapsPath)
 	if err != nil {
 		return err
 	}
-	fmt.Println(addrRanges)
 
-	//memPath := fmt.Sprintf("/proc/%s/mem", pid)
+	memPath := fmt.Sprintf("/proc/%s/mem", pid)
+	findDataInAddrRanges(memPath, targetVal, addrRanges)
 
 	return nil
 }
 
-func GetWritableAddrRanges(mapsPath string) ([]string, error) {
-	addrRanges := []string{}
-	ignorePaths := []string{"/vendor/lib64/", "/system/lib64/", "/system/framework/"}
+func getWritableAddrRanges(mapsPath string) ([][2]int64, error) {
+	addrRanges := [][2]int64{}
+	ignorePaths := []string{"/vendor/lib64/", "/system/lib64/", "/system/framework/", "/data/dalvik-cache/"}
 	file, err := os.Open(mapsPath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -127,12 +128,55 @@ func GetWritableAddrRanges(mapsPath string) ([]string, error) {
 				}
 			}
 			if !ignoreFlag {
-				addrRanges = append(addrRanges, addrRange)
+				addrs := strings.Split(addrRange, "-")
+				beginAddr, _ := strconv.ParseInt(addrs[0], 16, 64)
+				endAddr, _ := strconv.ParseInt(addrs[1], 16, 64)
+				addrRanges = append(addrRanges, [2]int64{beginAddr, endAddr})
 			}
 		}
 	}
 	return addrRanges, nil
 }
+
+func findDataInAddrRanges(memPath string, targetVal uint64, addrRanges [][2]int64) ([]int64, error) {
+	for _, s := range addrRanges {
+		beginAddr := s[0]
+		endAddr := s[1]
+		buffer, err := readMemory(memPath, beginAddr, endAddr)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Printf("Memory size: 0x%x bytes\n", len(buffer))
+	}
+
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b[0:], targetVal)
+
+	return nil, nil
+}
+
+func readMemory(memPath string, beginAddr int64, endAddr int64) ([]byte, error) {
+	f, err := os.Open(memPath)
+	if err != nil {
+		panic(err)
+	}
+	n := endAddr - beginAddr + 1
+	r := io.NewSectionReader(f, beginAddr, n)
+	buffer := make([]byte, n)
+	r.Read(buffer)
+	return buffer, nil
+}
+
+/*
+func writeMemory(memPath string, targetAddr int64, tagerVal int64) ([]byte, error) {
+	f, err := os.Open(memPath)
+	if err != nil {
+		panic(err)
+	}
+
+	return buffer, nil
+}
+*/
 
 func Detach() error {
 	if !isAttached {
@@ -156,7 +200,7 @@ func wait(pid int) error {
 	var s sys.WaitStatus
 
 	// sys.WALL = 0x40000000 on Linux(ARM64)
-	// Using sys.WALL does not pass build on macOS.
+	// Using sys.WALL does not pass test on macOS.
 	// https://github.com/golang/go/blob/50bd1c4d4eb4fac8ddeb5f063c099daccfb71b26/src/syscall/zerrors_linux_arm.go#L1203
 	wpid, err := sys.Wait4(pid, &s, 0x40000000, nil)
 	if err != nil {

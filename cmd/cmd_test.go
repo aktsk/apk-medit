@@ -6,9 +6,10 @@ import (
 )
 
 func TestGetWritableAddrRanges(t *testing.T) {
-	actual, _ := GetWritableAddrRanges("testdata/proc_test_maps")
-	expected := []string{"75d75f2000-75d75f8000", "7fcf0ff000-7fcf0ff000", "7fcf100000-7fcf8ff000"}
+	actual, _ := getWritableAddrRanges("testdata/proc_test_maps")
+	expected := [][2]int64{{506124509184, 506124533760}, {548934774784, 548934774784}, {548934778880, 548943163392}}
+	// "75d75f2000-75d75f8000", "7fcf0ff000-7fcf0ff000", "7fcf100000-7fcf8ff000"
 	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("got AddrRanges: %s\nexpected AddrRanges: %s", actual, expected)
+		t.Errorf("got AddrRanges: %v\nexpected AddrRanges: %v", actual, expected)
 	}
 }
