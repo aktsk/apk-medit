@@ -18,8 +18,8 @@ func TestGetWritableAddrRanges(t *testing.T) {
 func TestGetAllFoundAddrSlice(t *testing.T) {
 	memory := []byte{0x10, 0x11, 0x12, 0x10, 0x10, 0x11, 0x12, 0x11, 0x10, 0x11, 0x12, 0x12}
 	searchBytes := []byte{0x10, 0x11, 0x12}
-	results := []int{}
-	actual := getAllFoundAddr(memory, searchBytes, len(searchBytes), 0x100, 0, results)
+	actual := []int{}
+	getAllFoundAddrs(&memory, searchBytes, len(searchBytes), 0x100, 0, &actual)
 	expected := []int{0x100, 0x104, 0x108}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("got addr slice: %v\nexpected addr slice: %v", actual, expected)
@@ -29,8 +29,8 @@ func TestGetAllFoundAddrSlice(t *testing.T) {
 func TestGetEmptyAddrSlice(t *testing.T) {
 	memory := []byte{0x10}
 	searchBytes := []byte{0xAA, 0xBB, 0xCC}
-	results := []int{}
-	actual := getAllFoundAddr(memory, searchBytes, len(searchBytes), 0x100, 0, results)
+	actual := []int{}
+	getAllFoundAddrs(&memory, searchBytes, len(searchBytes), 0x100, 0, &actual)
 	expected := []int{}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("got addr slice: %v\nexpected addr slice: %v", actual, expected)

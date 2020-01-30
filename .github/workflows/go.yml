@@ -32,4 +32,4 @@ jobs:
       run: make test
 
     - name: Build
-      run: GOOS=linux GOARCH=arm64 GOARM=7 go build -o medit
+      run: make build
