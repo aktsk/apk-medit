@@ -102,8 +102,8 @@ func Find(pid string, targetVal uint64) error {
 	return nil
 }
 
-func getWritableAddrRanges(mapsPath string) ([][2]int64, error) {
-	addrRanges := [][2]int64{}
+func getWritableAddrRanges(mapsPath string) ([][2]int, error) {
+	addrRanges := [][2]int{}
 	ignorePaths := []string{"/vendor/lib64/", "/system/lib64/", "/system/framework/", "/data/dalvik-cache/"}
 	file, err := os.Open(mapsPath)
 	if err != nil {
@@ -131,44 +131,59 @@ func getWritableAddrRanges(mapsPath string) ([][2]int64, error) {
 				addrs := strings.Split(addrRange, "-")
 				beginAddr, _ := strconv.ParseInt(addrs[0], 16, 64)
 				endAddr, _ := strconv.ParseInt(addrs[1], 16, 64)
-				addrRanges = append(addrRanges, [2]int64{beginAddr, endAddr})
+				addrRanges = append(addrRanges, [2]int{int(beginAddr), int(endAddr)})
 			}
 		}
 	}
 	return addrRanges, nil
 }
 
-func findDataInAddrRanges(memPath string, targetVal uint64, addrRanges [][2]int64) ([]int64, error) {
+func findDataInAddrRanges(memPath string, targetVal uint64, addrRanges [][2]int) ([]int, error) {
+	//results := []int{}
+	f, err := os.Open(memPath)
+	defer f.Close()
 	for _, s := range addrRanges {
 		beginAddr := s[0]
 		endAddr := s[1]
-		buffer, err := readMemory(memPath, beginAddr, endAddr)
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Printf("Memory size: 0x%x bytes\n", len(buffer))
-	}
+		memory := readMemory(f, beginAddr, endAddr)
+		fmt.Printf("Memory size: 0x%x bytes\n", len(memory))
+		fmt.Printf("Begin Address: 0x%x, End Address 0x%x\n", beginAddr, endAddr)
 
-	b := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b[0:], targetVal)
+		searchBytes := make([]byte, 8)
+		binary.LittleEndian.PutUint64(searchBytes[0:], targetVal)
+		//searchLength := len(searchBytes)
+		//results = getAllFoundAddr(memory, searchBytes, searchLength, beginAddr, 0, results)
+	}
 
 	return nil, nil
 }
 
-func readMemory(memPath string, beginAddr int64, endAddr int64) ([]byte, error) {
-	f, err := os.Open(memPath)
-	if err != nil {
-		panic(err)
+func getAllFoundAddr(memory []byte, searchBytes []byte, searchLength int, beginAddr int, offset int, results []int) []int {
+	index := bytes.Index(memory, searchBytes)
+	if index == -1 {
+		return results
+	} else {
+		resultAddr := beginAddr + index + offset
+		results = append(results, resultAddr)
+		additional := index + searchLength
+		offset += additional
+		return getAllFoundAddr(memory[additional:], searchBytes, searchLength, beginAddr, offset, results)
 	}
+}
+
+func readMemory(memFile *os.File, beginAddr int, endAddr int) []byte {
 	n := endAddr - beginAddr + 1
-	r := io.NewSectionReader(f, beginAddr, n)
+	r := io.NewSectionReader(memFile, int64(beginAddr), int64(n))
 	buffer := make([]byte, n)
 	r.Read(buffer)
-	return buffer, nil
+	return buffer
 }
 
 /*
-func writeMemory(memPath string, targetAddr int64, tagerVal int64) ([]byte, error) {
+func writeMemory(memFile *os.File, targetAddr int, tagerVal int) ([]byte, error) {
 	f, err := os.Open(memPath)
 	if err != nil {
 		panic(err)
