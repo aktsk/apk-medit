@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -88,24 +89,46 @@ func Attach(pid string) error {
 	return nil
 }
 
-func Find(pid string, targetVal uint64) error {
+func Find(pid string, targetVal uint64) ([]int, error) {
 	// search value in /proc/<pid>/mem
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
 	addrRanges, err := getWritableAddrRanges(mapsPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	memPath := fmt.Sprintf("/proc/%s/mem", pid)
 	foundAddrs, _ := findDataInAddrRanges(memPath, targetVal, addrRanges)
 	fmt.Printf("Found: 0x%x!!!\n", len(foundAddrs))
 
-	return nil
+	return foundAddrs, nil
+}
+
+func Filter(pid string, targetVal uint64, prevAddrs []int) ([]int, error) {
+	// search value in /proc/<pid>/mem
+	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
+	addrRanges, err := getWritableAddrRanges(mapsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	memPath := fmt.Sprintf("/proc/%s/mem", pid)
+	// TODO: Changed to check only previous address to improve search speed
+	foundAddrs, _ := findDataInAddrRanges(memPath, targetVal, addrRanges)
+	result := []int{}
+	for _, addr := range foundAddrs {
+		i := sort.Search(len(prevAddrs), func(i int) bool { return prevAddrs[i] >= addr })
+		if i < len(prevAddrs) && prevAddrs[i] == addr {
+			result = append(result, addr)
+		}
+	}
+	fmt.Printf("Found: 0x%x!!!\n", len(result))
+	return result, nil
 }
 
 func getWritableAddrRanges(mapsPath string) ([][2]int, error) {
 	addrRanges := [][2]int{}
-	ignorePaths := []string{"/vendor/lib64/", "/system/lib64/", "/system/bin/", "/system/framework/", "/data/dalvik-cache/", "/dev/ashmem/dalvik"}
+	ignorePaths := []string{"/vendor/lib64/", "/system/lib64/", "/system/bin/", "/system/framework/", "/data/dalvik-cache/"}
 	file, err := os.Open(mapsPath)
 	if err != nil {
 		return nil, err
@@ -141,6 +164,7 @@ func getWritableAddrRanges(mapsPath string) ([][2]int, error) {
 }
 
 func findDataInAddrRanges(memPath string, targetVal uint64, addrRanges [][2]int) ([]int, error) {
+	// TODO: SupportUTF8 strings
 	foundAddrs := []int{}
 	f, err := os.Open(memPath)
 	defer f.Close()

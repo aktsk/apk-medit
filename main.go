@@ -14,6 +14,7 @@ import (
 )
 
 var appPID string
+var addrCache []int
 
 func executor(in string) {
 	if in == "ps" {
@@ -37,13 +38,32 @@ func executor(in string) {
 
 	} else if strings.HasPrefix(in, "find") {
 		slice := strings.Split(in, " ")
-		var targetVal uint64
-		if len(slice) > 1 {
-			targetVal, _ = strconv.ParseUint(slice[1], 64, 10)
-		} else {
+		if len(slice) == 1 {
 			fmt.Println("Target value cannot be specified.")
+			return
 		}
-		cmd.Find(appPID, targetVal)
+		var targetVal uint64
+		targetVal, _ = strconv.ParseUint(slice[1], 64, 10)
+		foundAddr, err := cmd.Find(appPID, targetVal)
+		if err != nil {
+			fmt.Println(err)
+		}
+		addrCache = foundAddr
+
+	} else if strings.HasPrefix(in, "filter") {
+		if len(addrCache) == 0 {
+			fmt.Println("No previous results. ")
+			return
+		}
+		slice := strings.Split(in, " ")
+		if len(slice) == 1 {
+			fmt.Println("Target value cannot be specified.")
+			return
+		}
+
+		var targetVal uint64
+		targetVal, _ = strconv.ParseUint(slice[1], 64, 10)
+		cmd.Filter(appPID, targetVal, addrCache)
 
 	} else if in == "detach" {
 		if err := cmd.Detach(); err != nil {
@@ -67,6 +87,7 @@ func completer(t prompt.Document) []prompt.Suggest {
 		{Text: "attach", Description: "Attach to the specified process."},
 		{Text: "attach <pid>", Description: "Attach to the process specified on the command line."},
 		{Text: "find <int>", Description: "TODO"},
+		{Text: "filter <int>", Description: "TODO"},
 		{Text: "detach", Description: "Detach from the attached process."},
 		{Text: "ps", Description: "Find the target process and if there is only one, specify it as the target."},
 		{Text: "exit"},
@@ -82,7 +103,7 @@ func main() {
 	} else if pid != "" {
 		appPID = pid
 	}
-
+	addrCache = []int{}
 	p := prompt.New(
 		executor,
 		completer,
