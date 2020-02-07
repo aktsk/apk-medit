@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	sys "golang.org/x/sys/unix"
 )
@@ -163,8 +164,15 @@ func getWritableAddrRanges(mapsPath string) ([][2]int, error) {
 	return addrRanges, nil
 }
 
+var splitSize = 0x1000000
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		return make([]byte, splitSize)
+	},
+}
+
 func findDataInAddrRanges(memPath string, targetVal uint64, addrRanges [][2]int) ([]int, error) {
-	// TODO: SupportUTF8 strings
+	// TODO: Support UTF8 strings
 	foundAddrs := []int{}
 	f, err := os.Open(memPath)
 	defer f.Close()
@@ -175,19 +183,35 @@ func findDataInAddrRanges(memPath string, targetVal uint64, addrRanges [][2]int)
 	for _, s := range addrRanges {
 		beginAddr := s[0]
 		endAddr := s[1]
+		memSize := endAddr - beginAddr
 		if err != nil {
 			fmt.Println(err)
 		}
-		memory := readMemory(f, beginAddr, endAddr)
-		fmt.Printf("Memory size: 0x%x bytes\n", len(memory))
-		fmt.Printf("Begin Address: 0x%x, End Address 0x%x\n", beginAddr, endAddr)
-		getAllFoundAddrs(&memory, searchBytes, searchLength, beginAddr, 0, &foundAddrs)
+		for i := 0; i < (memSize/splitSize)+1; i++ {
+			splitIndex := (i + 1) * splitSize
+			splittedBeginAddr := beginAddr + i*splitSize
+			splittedEndAddr := endAddr
+			if splitIndex < memSize {
+				splittedEndAddr = beginAddr + splitIndex
+			}
+			b := bufferPool.Get().([]byte)
+			readMemory(f, b, splittedBeginAddr, splittedEndAddr)
+			fmt.Printf("Memory size: 0x%x bytes\n", len(b))
+			fmt.Printf("Begin Address: 0x%x, End Address 0x%x\n", splittedBeginAddr, splittedEndAddr)
+			findDataInSplittedMemory(&b, searchBytes, searchLength, splittedBeginAddr, 0, &foundAddrs)
+			bufferPool.Put(b)
+			if len(foundAddrs) > 10000000 {
+				fmt.Println("Too many addresses with target data found...")
+				goto FINISH
+			}
+		}
 	}
 
+FINISH:
 	return foundAddrs, nil
 }
 
-func getAllFoundAddrs(memory *[]byte, searchBytes []byte, searchLength int, beginAddr int, offset int, results *[]int) {
+func findDataInSplittedMemory(memory *[]byte, searchBytes []byte, searchLength int, beginAddr int, offset int, results *[]int) {
 	index := bytes.Index((*memory)[offset:], searchBytes)
 	if index == -1 {
 		return
@@ -195,14 +219,14 @@ func getAllFoundAddrs(memory *[]byte, searchBytes []byte, searchLength int, begi
 		resultAddr := beginAddr + index + offset
 		*results = append(*results, resultAddr)
 		offset += index + searchLength
-		getAllFoundAddrs(memory, searchBytes, searchLength, beginAddr, offset, results)
+		findDataInSplittedMemory(memory, searchBytes, searchLength, beginAddr, offset, results)
 	}
 }
 
-func readMemory(memFile *os.File, beginAddr int, endAddr int) []byte {
-	n := endAddr - beginAddr + 1
+func readMemory(memFile *os.File, buffer []byte, beginAddr int, endAddr int) []byte {
+	n := endAddr - beginAddr
 	r := io.NewSectionReader(memFile, int64(beginAddr), int64(n))
-	buffer := make([]byte, n)
+	buffer = buffer[:n]
 	r.Read(buffer)
 	return buffer
 }
