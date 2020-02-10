@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -90,7 +89,7 @@ func Attach(pid string) error {
 	return nil
 }
 
-func Find(pid string, targetVal uint64) ([]int, error) {
+func Find(pid string, targetVal uint64) ([][2]int, error) {
 	// search value in /proc/<pid>/mem
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
 	addrRanges, err := getWritableAddrRanges(mapsPath)
@@ -105,26 +104,12 @@ func Find(pid string, targetVal uint64) ([]int, error) {
 	return foundAddrs, nil
 }
 
-func Filter(pid string, targetVal uint64, prevAddrs []int) ([]int, error) {
-	// search value in /proc/<pid>/mem
-	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
-	addrRanges, err := getWritableAddrRanges(mapsPath)
-	if err != nil {
-		return nil, err
-	}
-
+func Filter(pid string, targetVal uint64, prevAddrs [][2]int) ([][2]int, error) {
+	// In case targetVal length is bigger prev value, resize prevAddrs
 	memPath := fmt.Sprintf("/proc/%s/mem", pid)
-	// TODO: Changed to check only previous address to improve search speed
-	foundAddrs, _ := findDataInAddrRanges(memPath, targetVal, addrRanges)
-	result := []int{}
-	for _, addr := range foundAddrs {
-		i := sort.Search(len(prevAddrs), func(i int) bool { return prevAddrs[i] >= addr })
-		if i < len(prevAddrs) && prevAddrs[i] == addr {
-			result = append(result, addr)
-		}
-	}
-	fmt.Printf("Found: 0x%x!!!\n", len(result))
-	return result, nil
+	foundAddrs, _ := findDataInAddrRanges(memPath, targetVal, prevAddrs)
+	fmt.Printf("Found: 0x%x!!!\n", len(foundAddrs))
+	return foundAddrs, nil
 }
 
 func getWritableAddrRanges(mapsPath string) ([][2]int, error) {
@@ -171,9 +156,9 @@ var bufferPool = sync.Pool{
 	},
 }
 
-func findDataInAddrRanges(memPath string, targetVal uint64, addrRanges [][2]int) ([]int, error) {
+func findDataInAddrRanges(memPath string, targetVal uint64, addrRanges [][2]int) ([][2]int, error) {
 	// TODO: Support UTF8 strings
-	foundAddrs := []int{}
+	foundAddrs := [][2]int{}
 	f, err := os.Open(memPath)
 	defer f.Close()
 
@@ -211,13 +196,13 @@ FINISH:
 	return foundAddrs, nil
 }
 
-func findDataInSplittedMemory(memory *[]byte, searchBytes []byte, searchLength int, beginAddr int, offset int, results *[]int) {
+func findDataInSplittedMemory(memory *[]byte, searchBytes []byte, searchLength int, beginAddr int, offset int, results *[][2]int) {
 	index := bytes.Index((*memory)[offset:], searchBytes)
 	if index == -1 {
 		return
 	} else {
 		resultAddr := beginAddr + index + offset
-		*results = append(*results, resultAddr)
+		*results = append(*results, [2]int{resultAddr, resultAddr + searchLength - 1})
 		offset += index + searchLength
 		findDataInSplittedMemory(memory, searchBytes, searchLength, beginAddr, offset, results)
 	}
