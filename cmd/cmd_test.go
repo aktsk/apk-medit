@@ -18,9 +18,9 @@ func TestGetWritableAddrRanges(t *testing.T) {
 func TestFindDataInSplittedMemory(t *testing.T) {
 	memory := []byte{0x10, 0x11, 0x12, 0x10, 0x10, 0x11, 0x12, 0x11, 0x10, 0x11, 0x12, 0x12}
 	searchBytes := []byte{0x10, 0x11, 0x12}
-	actual := [][2]int{}
+	actual := []int{}
 	findDataInSplittedMemory(&memory, searchBytes, len(searchBytes), 0x100, 0, &actual)
-	expected := [][2]int{{0x100, 0x102}, {0x104, 0x106}, {0x108, 0x10A}}
+	expected := []int{0x100, 0x104, 0x108}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("got addr slice: %v\nexpected addr slice: %v", actual, expected)
 	}
@@ -29,9 +29,9 @@ func TestFindDataInSplittedMemory(t *testing.T) {
 func TestFindEmptyInSplittedMemory(t *testing.T) {
 	memory := []byte{0x10}
 	searchBytes := []byte{0xAA, 0xBB, 0xCC}
-	actual := [][2]int{}
+	actual := []int{}
 	findDataInSplittedMemory(&memory, searchBytes, len(searchBytes), 0x100, 0, &actual)
-	expected := [][2]int{}
+	expected := []int{}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("got addr slice: %v\nexpected addr slice: %v", actual, expected)
 	}
@@ -40,7 +40,7 @@ func TestFindEmptyInSplittedMemory(t *testing.T) {
 func TestReadMemory(t *testing.T) {
 	memFile, _ := os.Open("testdata/proc_test_mem")
 	defer memFile.Close()
-	saved := make([]byte, 8)
+	saved := make([]byte, 5)
 	actual := readMemory(memFile, saved, 0x3, 0x8) // Is it really zero origin?
 	expected := []byte{0x3, 0x4, 0x5, 0x6, 0x7}
 	if !reflect.DeepEqual(actual, expected) {

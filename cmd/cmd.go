@@ -3,7 +3,6 @@ package cmd
 import (
 	"bufio"
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -89,7 +88,7 @@ func Attach(pid string) error {
 	return nil
 }
 
-func Find(pid string, targetVal uint64) ([][2]int, error) {
+func Find(pid string, targetVal string) ([]int, error) {
 	// search value in /proc/<pid>/mem
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
 	addrRanges, err := getWritableAddrRanges(mapsPath)
@@ -98,24 +97,72 @@ func Find(pid string, targetVal uint64) ([][2]int, error) {
 	}
 
 	memPath := fmt.Sprintf("/proc/%s/mem", pid)
-	foundAddrs, _ := findDataInAddrRanges(memPath, targetVal, addrRanges)
+	targetBytes := intToUTF8bytes(targetVal)
+	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
+	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
 	fmt.Printf("Found: 0x%x!!!\n", len(foundAddrs))
-
+	if len(foundAddrs) < 10 {
+		for _, v := range foundAddrs {
+			fmt.Printf("Address: 0x%x\n", v)
+		}
+	}
+	fmt.Println(foundAddrs)
 	return foundAddrs, nil
 }
 
-func Filter(pid string, targetVal uint64, prevAddrs [][2]int) ([][2]int, error) {
-	// In case targetVal length is bigger prev value, resize prevAddrs
+func Filter(pid string, targetVal string, prevAddrs []int) ([]int, error) {
+	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
+	writableAddrRanges, err := getWritableAddrRanges(mapsPath)
+	if err != nil {
+		return nil, err
+	}
+	targetBytes := intToUTF8bytes(targetVal)
+	targetLength := len(targetBytes)
+	addrRanges := [][2]int{}
+	// check if previous result address exists in current memory map
+	for _, prevAddr := range prevAddrs {
+		for _, writable := range writableAddrRanges {
+			if writable[0] < prevAddr && prevAddr < writable[1] {
+				addrRanges = append(addrRanges, [2]int{prevAddr, prevAddr + targetLength})
+			}
+		}
+	}
+	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
 	memPath := fmt.Sprintf("/proc/%s/mem", pid)
-	foundAddrs, _ := findDataInAddrRanges(memPath, targetVal, prevAddrs)
+	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
 	fmt.Printf("Found: 0x%x!!!\n", len(foundAddrs))
+	if len(foundAddrs) < 10 {
+		for _, v := range foundAddrs {
+			fmt.Printf("Address: 0x%x\n", v)
+		}
+	}
 	return foundAddrs, nil
+}
+
+func Patch(pid string, targetVal string, targetAddrs []int) error {
+	memPath := fmt.Sprintf("/proc/%s/mem", pid)
+	f, err := os.OpenFile(memPath, os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	fmt.Println(targetAddrs)
+	targetBytes := intToUTF8bytes(targetVal)
+	fmt.Println(targetBytes)
+	for _, v := range targetAddrs {
+		err := writeMemory(f, v, targetBytes)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func getWritableAddrRanges(mapsPath string) ([][2]int, error) {
 	addrRanges := [][2]int{}
 	ignorePaths := []string{"/vendor/lib64/", "/system/lib64/", "/system/bin/", "/system/framework/", "/data/dalvik-cache/"}
-	file, err := os.Open(mapsPath)
+	file, err := os.OpenFile(mapsPath, os.O_RDONLY, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -149,22 +196,19 @@ func getWritableAddrRanges(mapsPath string) ([][2]int, error) {
 	return addrRanges, nil
 }
 
-var splitSize = 0x1000000
+var splitSize = 0x50000000
 var bufferPool = sync.Pool{
 	New: func() interface{} {
 		return make([]byte, splitSize)
 	},
 }
 
-func findDataInAddrRanges(memPath string, targetVal uint64, addrRanges [][2]int) ([][2]int, error) {
-	// TODO: Support UTF8 strings
-	foundAddrs := [][2]int{}
-	f, err := os.Open(memPath)
+func findDataInAddrRanges(memPath string, targetBytes []byte, addrRanges [][2]int) ([]int, error) {
+	foundAddrs := []int{}
+	f, err := os.OpenFile(memPath, os.O_RDONLY, 0600)
 	defer f.Close()
 
-	searchBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(searchBytes[0:], targetVal)
-	searchLength := len(searchBytes)
+	searchLength := len(targetBytes)
 	for _, s := range addrRanges {
 		beginAddr := s[0]
 		endAddr := s[1]
@@ -179,53 +223,48 @@ func findDataInAddrRanges(memPath string, targetVal uint64, addrRanges [][2]int)
 			if splitIndex < memSize {
 				splittedEndAddr = beginAddr + splitIndex
 			}
-			b := bufferPool.Get().([]byte)
+			b := bufferPool.Get().([]byte)[:(splittedEndAddr - splittedBeginAddr)]
 			readMemory(f, b, splittedBeginAddr, splittedEndAddr)
-			fmt.Printf("Memory size: 0x%x bytes\n", len(b))
-			fmt.Printf("Begin Address: 0x%x, End Address 0x%x\n", splittedBeginAddr, splittedEndAddr)
-			findDataInSplittedMemory(&b, searchBytes, searchLength, splittedBeginAddr, 0, &foundAddrs)
+			//fmt.Printf("Memory size: 0x%x bytes\n", len(b))
+			//fmt.Printf("Begin Address: 0x%x, End Address 0x%x\n", splittedBeginAddr, splittedEndAddr)
+			findDataInSplittedMemory(&b, targetBytes, searchLength, splittedBeginAddr, 0, &foundAddrs)
 			bufferPool.Put(b)
 			if len(foundAddrs) > 10000000 {
 				fmt.Println("Too many addresses with target data found...")
-				goto FINISH
+				return foundAddrs, nil
 			}
 		}
 	}
 
-FINISH:
 	return foundAddrs, nil
 }
 
-func findDataInSplittedMemory(memory *[]byte, searchBytes []byte, searchLength int, beginAddr int, offset int, results *[][2]int) {
-	index := bytes.Index((*memory)[offset:], searchBytes)
+func findDataInSplittedMemory(memory *[]byte, targetBytes []byte, searchLength int, beginAddr int, offset int, results *[]int) {
+	// use Rabin-Karp string search algorithm in bytes.Index
+	index := bytes.Index((*memory)[offset:], targetBytes)
 	if index == -1 {
 		return
 	} else {
 		resultAddr := beginAddr + index + offset
-		*results = append(*results, [2]int{resultAddr, resultAddr + searchLength - 1})
+		*results = append(*results, resultAddr)
 		offset += index + searchLength
-		findDataInSplittedMemory(memory, searchBytes, searchLength, beginAddr, offset, results)
+		findDataInSplittedMemory(memory, targetBytes, searchLength, beginAddr, offset, results)
 	}
 }
 
 func readMemory(memFile *os.File, buffer []byte, beginAddr int, endAddr int) []byte {
 	n := endAddr - beginAddr
 	r := io.NewSectionReader(memFile, int64(beginAddr), int64(n))
-	buffer = buffer[:n]
 	r.Read(buffer)
 	return buffer
 }
 
-/*
-func writeMemory(memFile *os.File, targetAddr int, tagerVal int) ([]byte, error) {
-	f, err := os.Open(memPath)
-	if err != nil {
-		panic(err)
+func writeMemory(memFile *os.File, targetAddr int, targetVal []byte) error {
+	if _, err := memFile.WriteAt(targetVal, int64(targetAddr)); err != nil {
+		return err
 	}
-
-	return buffer, nil
+	return nil
 }
-*/
 
 func Detach() error {
 	if !isAttached {

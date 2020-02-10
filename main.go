@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/aktsk/medit/cmd"
@@ -42,9 +41,7 @@ func executor(in string) {
 			fmt.Println("Target value cannot be specified.")
 			return
 		}
-		var targetVal uint64
-		targetVal, _ = strconv.ParseUint(slice[1], 64, 10)
-		foundAddr, err := cmd.Find(appPID, targetVal)
+		foundAddr, err := cmd.Find(appPID, slice[1])
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -61,9 +58,18 @@ func executor(in string) {
 			return
 		}
 
-		var targetVal uint64
-		targetVal, _ = strconv.ParseUint(slice[1], 64, 10)
-		cmd.Filter(appPID, targetVal, addrCache)
+		cmd.Filter(appPID, slice[1], addrCache)
+
+	} else if strings.HasPrefix(in, "patch") {
+		slice := strings.Split(in, " ")
+		if len(slice) == 1 {
+			fmt.Println("Target value cannot be specified.")
+			return
+		}
+		err := cmd.Patch(appPID, slice[1], addrCache)
+		if err != nil {
+			fmt.Println(err)
+		}
 
 	} else if in == "detach" {
 		if err := cmd.Detach(); err != nil {
@@ -88,6 +94,7 @@ func completer(t prompt.Document) []prompt.Suggest {
 		{Text: "attach <pid>", Description: "Attach to the process specified on the command line."},
 		{Text: "find <int>", Description: "TODO"},
 		{Text: "filter <int>", Description: "TODO"},
+		{Text: "patch  <int>", Description: "TODO"},
 		{Text: "detach", Description: "Detach from the attached process."},
 		{Text: "ps", Description: "Find the target process and if there is only one, specify it as the target."},
 		{Text: "exit"},
