@@ -56,15 +56,15 @@ func Attach(pid string) error {
 	}
 
 	fmt.Printf("Target PID: %s\n", pid)
-	tid_dir := fmt.Sprintf("/proc/%s/task", pid)
-	if _, err := os.Stat(tid_dir); err == nil {
-		tidinfo, err := ioutil.ReadDir(tid_dir)
+	tidDir := fmt.Sprintf("/proc/%s/task", pid)
+	if _, err := os.Stat(tidDir); err == nil {
+		tidInfo, err := ioutil.ReadDir(tidDir)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		tids = []int{}
-		for _, t := range tidinfo {
+		for _, t := range tidInfo {
 			tid, _ := strconv.Atoi(t.Name())
 			tids = append(tids, tid)
 		}
@@ -97,7 +97,8 @@ func Find(pid string, targetVal string) ([]int, error) {
 	}
 
 	memPath := fmt.Sprintf("/proc/%s/mem", pid)
-	targetBytes := intToUTF8bytes(targetVal)
+	//targetBytes := stringToBytes(targetVal)
+	targetBytes, _ := wordToBytes(targetVal)
 	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
 	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
 	fmt.Printf("Found: 0x%x!!!\n", len(foundAddrs))
@@ -116,7 +117,8 @@ func Filter(pid string, targetVal string, prevAddrs []int) ([]int, error) {
 	if err != nil {
 		return nil, err
 	}
-	targetBytes := intToUTF8bytes(targetVal)
+	//targetBytes := stringToBytes(targetVal)
+	targetBytes, _ := wordToBytes(targetVal)
 	targetLength := len(targetBytes)
 	addrRanges := [][2]int{}
 	// check if previous result address exists in current memory map
@@ -148,7 +150,7 @@ func Patch(pid string, targetVal string, targetAddrs []int) error {
 	defer f.Close()
 
 	fmt.Println(targetAddrs)
-	targetBytes := intToUTF8bytes(targetVal)
+	targetBytes, _ := stringToBytes(targetVal)
 	fmt.Println(targetBytes)
 	for _, v := range targetAddrs {
 		err := writeMemory(f, v, targetBytes)
@@ -229,7 +231,7 @@ func findDataInAddrRanges(memPath string, targetBytes []byte, addrRanges [][2]in
 			//fmt.Printf("Begin Address: 0x%x, End Address 0x%x\n", splittedBeginAddr, splittedEndAddr)
 			findDataInSplittedMemory(&b, targetBytes, searchLength, splittedBeginAddr, 0, &foundAddrs)
 			bufferPool.Put(b)
-			if len(foundAddrs) > 10000000 {
+			if len(foundAddrs) > 10000 {
 				fmt.Println("Too many addresses with target data found...")
 				return foundAddrs, nil
 			}

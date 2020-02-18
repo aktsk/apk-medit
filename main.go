@@ -58,7 +58,11 @@ func executor(in string) {
 			return
 		}
 
-		cmd.Filter(appPID, slice[1], addrCache)
+		foundAddr, err := cmd.Filter(appPID, slice[1], addrCache)
+		if err != nil {
+			fmt.Println(err)
+		}
+		addrCache = foundAddr
 
 	} else if strings.HasPrefix(in, "patch") {
 		slice := strings.Split(in, " ")
