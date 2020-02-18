@@ -88,60 +88,92 @@ func Attach(pid string) error {
 	return nil
 }
 
-func Find(pid string, targetVal string) ([]int, error) {
+type FoundAddr struct {
+	beginAddrs []int
+	converter  func(string) ([]byte, error)
+}
+
+func Find(pid string, targetVal string) ([]FoundAddr, error) {
+	foundAddrs := []FoundAddr{}
 	// search value in /proc/<pid>/mem
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
+	memPath := fmt.Sprintf("/proc/%s/mem", pid)
 	addrRanges, err := getWritableAddrRanges(mapsPath)
 	if err != nil {
 		return nil, err
 	}
 
-	memPath := fmt.Sprintf("/proc/%s/mem", pid)
-	//targetBytes := stringToBytes(targetVal)
-	targetBytes, _ := wordToBytes(targetVal)
+	targetBytes, _ := stringToBytes(targetVal)
+	fmt.Println("Search UTF-8 String...")
 	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
-	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
-	fmt.Printf("Found: 0x%x!!!\n", len(foundAddrs))
+	foundBeginAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
+	fmt.Printf("Found: 0x%x!!!\n", len(foundBeginAddrs))
 	if len(foundAddrs) < 10 {
-		for _, v := range foundAddrs {
+		for _, v := range foundBeginAddrs {
 			fmt.Printf("Address: 0x%x\n", v)
 		}
 	}
-	fmt.Println(foundAddrs)
+	fmt.Println(foundBeginAddrs)
+	foundAddrs = append(foundAddrs, FoundAddr{
+		beginAddrs: foundBeginAddrs,
+		converter:  stringToBytes,
+	})
+
+	targetBytes, _ = dwordToBytes(targetVal)
+	fmt.Println("Search Double Word...")
+	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
+	foundBeginAddrs, _ = findDataInAddrRanges(memPath, targetBytes, addrRanges)
+	fmt.Printf("Found: 0x%x!!!\n", len(foundBeginAddrs))
+	if len(foundAddrs) < 10 {
+		for _, v := range foundBeginAddrs {
+			fmt.Printf("Address: 0x%x\n", v)
+		}
+	}
+	fmt.Println(foundBeginAddrs)
+	foundAddrs = append(foundAddrs, FoundAddr{
+		beginAddrs: foundBeginAddrs,
+		converter:  dwordToBytes,
+	})
 	return foundAddrs, nil
 }
 
-func Filter(pid string, targetVal string, prevAddrs []int) ([]int, error) {
+func Filter(pid string, targetVal string, prevAddrs []FoundAddr) ([]FoundAddr, error) {
+	foundAddrs := []FoundAddr{}
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
+	memPath := fmt.Sprintf("/proc/%s/mem", pid)
 	writableAddrRanges, err := getWritableAddrRanges(mapsPath)
 	if err != nil {
 		return nil, err
 	}
-	//targetBytes := stringToBytes(targetVal)
-	targetBytes, _ := wordToBytes(targetVal)
-	targetLength := len(targetBytes)
 	addrRanges := [][2]int{}
 	// check if previous result address exists in current memory map
-	for _, prevAddr := range prevAddrs {
-		for _, writable := range writableAddrRanges {
-			if writable[0] < prevAddr && prevAddr < writable[1] {
-				addrRanges = append(addrRanges, [2]int{prevAddr, prevAddr + targetLength})
+	for _, foundAddr := range prevAddrs {
+		targetBytes, _ := foundAddr.converter(targetVal)
+		targetLength := len(targetBytes)
+		fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
+		for _, prevAddr := range foundAddr.beginAddrs {
+			for _, writable := range writableAddrRanges {
+				if writable[0] < prevAddr && prevAddr < writable[1] {
+					addrRanges = append(addrRanges, [2]int{prevAddr, prevAddr + targetLength})
+				}
 			}
 		}
-	}
-	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
-	memPath := fmt.Sprintf("/proc/%s/mem", pid)
-	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
-	fmt.Printf("Found: 0x%x!!!\n", len(foundAddrs))
-	if len(foundAddrs) < 10 {
-		for _, v := range foundAddrs {
-			fmt.Printf("Address: 0x%x\n", v)
+		foundBeginAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
+		fmt.Printf("Found: 0x%x!!!\n", len(foundBeginAddrs))
+		if len(foundBeginAddrs) < 10 {
+			for _, v := range foundBeginAddrs {
+				fmt.Printf("Address: 0x%x\n", v)
+			}
 		}
+		foundAddrs = append(foundAddrs, FoundAddr{
+			beginAddrs: foundBeginAddrs,
+			converter:  foundAddr.converter,
+		})
 	}
 	return foundAddrs, nil
 }
 
-func Patch(pid string, targetVal string, targetAddrs []int) error {
+func Patch(pid string, targetVal string, targetAddrs []FoundAddr) error {
 	memPath := fmt.Sprintf("/proc/%s/mem", pid)
 	f, err := os.OpenFile(memPath, os.O_WRONLY, 0600)
 	if err != nil {
@@ -149,13 +181,13 @@ func Patch(pid string, targetVal string, targetAddrs []int) error {
 	}
 	defer f.Close()
 
-	fmt.Println(targetAddrs)
-	targetBytes, _ := stringToBytes(targetVal)
-	fmt.Println(targetBytes)
-	for _, v := range targetAddrs {
-		err := writeMemory(f, v, targetBytes)
-		if err != nil {
-			return err
+	for _, foundAddr := range targetAddrs {
+		targetBytes, _ := foundAddr.converter(targetVal)
+		for _, targetAddr := range foundAddr.beginAddrs {
+			err := writeMemory(f, targetAddr, targetBytes)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

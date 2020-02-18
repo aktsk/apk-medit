@@ -13,7 +13,7 @@ import (
 )
 
 var appPID string
-var addrCache []int
+var addrCache []cmd.FoundAddr
 
 func executor(in string) {
 	if in == "ps" {
@@ -114,7 +114,7 @@ func main() {
 	} else if pid != "" {
 		appPID = pid
 	}
-	addrCache = []int{}
+	addrCache = []cmd.FoundAddr{}
 	p := prompt.New(
 		executor,
 		completer,
