@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -90,7 +91,7 @@ func Attach(pid string) error {
 	return nil
 }
 
-func Find(pid string, targetVal string) ([]Found, error) {
+func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 	founds := []Found{}
 	// search value in /proc/<pid>/mem
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
@@ -100,41 +101,85 @@ func Find(pid string, targetVal string) ([]Found, error) {
 		return nil, err
 	}
 
-	targetBytes, _ := stringToBytes(targetVal)
-	fmt.Println("Search UTF-8 String...")
-	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
-	foundBeginAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
-	fmt.Printf("Found: %d!!!\n", len(foundBeginAddrs))
-	if len(foundBeginAddrs) < 10 {
-		for _, v := range foundBeginAddrs {
-			fmt.Printf("Address: 0x%x\n", v)
+	if dataType == "all" {
+		// search string
+		foundAddrs, _ := findString(memPath, targetVal, addrRanges)
+		founds = append(founds, Found{
+			addrs:     foundAddrs,
+			converter: stringToBytes,
+		})
+		fmt.Println("------------------------")
+		// search int
+		foundAddrs, err = findWord(memPath, targetVal, addrRanges)
+		if err == nil {
+			founds = append(founds, Found{
+				addrs:     foundAddrs,
+				converter: wordToBytes,
+			})
+			return founds, nil
 		}
-	}
-	fmt.Println(foundBeginAddrs)
-	founds = append(founds, Found{
-		addrs:     foundBeginAddrs,
-		converter: stringToBytes,
-	})
+		fmt.Println("------------------------")
+		foundAddrs, err = findDword(memPath, targetVal, addrRanges)
+		if err == nil {
+			founds = append(founds, Found{
+				addrs:     foundAddrs,
+				converter: dwordToBytes,
+			})
+			return founds, nil
+		}
+		fmt.Println("------------------------")
+		foundAddrs, err = findQword(memPath, targetVal, addrRanges)
+		if err == nil {
+			founds = append(founds, Found{
+				addrs:     foundAddrs,
+				converter: qwordToBytes,
+			})
+			return founds, nil
+		}
 
-	targetBytes, _ = dwordToBytes(targetVal)
-	fmt.Println("Search Double Word...")
-	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
-	foundBeginAddrs, _ = findDataInAddrRanges(memPath, targetBytes, addrRanges)
-	fmt.Printf("Found: %d!!!\n", len(foundBeginAddrs))
-	if len(foundBeginAddrs) < 10 {
-		for _, v := range foundBeginAddrs {
-			fmt.Printf("Address: 0x%x\n", v)
+	} else if dataType == "string" {
+		foundAddrs, _ := findString(memPath, targetVal, addrRanges)
+		founds = append(founds, Found{
+			addrs:     foundAddrs,
+			converter: stringToBytes,
+		})
+		return founds, nil
+
+	} else if dataType == "word" {
+		foundAddrs, err := findWord(memPath, targetVal, addrRanges)
+		if err != nil {
+			founds = append(founds, Found{
+				addrs:     foundAddrs,
+				converter: wordToBytes,
+			})
+			return founds, nil
+		}
+
+	} else if dataType == "dword" {
+		foundAddrs, err := findDword(memPath, targetVal, addrRanges)
+		if err != nil {
+			founds = append(founds, Found{
+				addrs:     foundAddrs,
+				converter: dwordToBytes,
+			})
+			return founds, nil
+		}
+
+	} else if dataType == "qword" {
+		foundAddrs, err := findQword(memPath, targetVal, addrRanges)
+		if err != nil {
+			founds = append(founds, Found{
+				addrs:     foundAddrs,
+				converter: qwordToBytes,
+			})
+			return founds, nil
 		}
 	}
-	fmt.Println(foundBeginAddrs)
-	founds = append(founds, Found{
-		addrs:     foundBeginAddrs,
-		converter: dwordToBytes,
-	})
-	return founds, nil
+
+	return nil, errors.New("Error: specified datatype does not exist")
 }
 
-func Filter(pid string, targetVal string, prevAddrs []Found) ([]Found, error) {
+func Filter(pid string, targetVal string, prevFounds []Found) ([]Found, error) {
 	founds := []Found{}
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
 	memPath := fmt.Sprintf("/proc/%s/mem", pid)
@@ -143,29 +188,33 @@ func Filter(pid string, targetVal string, prevAddrs []Found) ([]Found, error) {
 		return nil, err
 	}
 	addrRanges := [][2]int{}
+
 	// check if previous result address exists in current memory map
-	for _, foundAddr := range prevAddrs {
-		targetBytes, _ := foundAddr.converter(targetVal)
+	for i, prevFound := range prevFounds {
+		targetBytes, _ := prevFound.converter(targetVal)
 		targetLength := len(targetBytes)
 		fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
-		for _, prevAddr := range foundAddr.addrs {
+		for _, prevAddr := range prevFound.addrs {
 			for _, writable := range writableAddrRanges {
 				if writable[0] < prevAddr && prevAddr < writable[1] {
 					addrRanges = append(addrRanges, [2]int{prevAddr, prevAddr + targetLength})
 				}
 			}
 		}
-		foundBeginAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
-		fmt.Printf("Found: 0x%x!!!\n", len(foundBeginAddrs))
-		if len(foundBeginAddrs) < 10 {
-			for _, v := range foundBeginAddrs {
+		foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
+		fmt.Printf("Found: %d!!!\n", len(foundAddrs))
+		if len(foundAddrs) < 10 {
+			for _, v := range foundAddrs {
 				fmt.Printf("Address: 0x%x\n", v)
 			}
 		}
 		founds = append(founds, Found{
-			addrs:     foundBeginAddrs,
-			converter: foundAddr.converter,
+			addrs:     foundAddrs,
+			converter: prevFound.converter,
 		})
+		if i != len(prevFounds)-1 {
+			fmt.Println("------------------------")
+		}
 	}
 	return founds, nil
 }

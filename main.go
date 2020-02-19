@@ -36,12 +36,18 @@ func executor(in string) {
 		cmd.Attach(pid)
 
 	} else if strings.HasPrefix(in, "find") {
-		slice := strings.Split(in, " ")
-		if len(slice) == 1 {
+		inputSlice := strings.Split(in, " ")
+		dataType := "all"
+		targetVal := inputSlice[1]
+		if len(inputSlice) < 1 {
 			fmt.Println("Target value cannot be specified.")
 			return
 		}
-		foundAddr, err := cmd.Find(appPID, slice[1])
+		if len(inputSlice) == 3 {
+			targetVal = inputSlice[2]
+			dataType = inputSlice[1]
+		}
+		foundAddr, err := cmd.Find(appPID, targetVal, dataType)
 		if err != nil {
 			fmt.Println(err)
 		}

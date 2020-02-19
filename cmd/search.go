@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -76,17 +77,14 @@ func findDataInAddrRanges(memPath string, targetBytes []byte, addrRanges [][2]in
 			}
 			b := bufferPool.Get().([]byte)[:(splittedEndAddr - splittedBeginAddr)]
 			readMemory(f, b, splittedBeginAddr, splittedEndAddr)
-			//fmt.Printf("Memory size: 0x%x bytes\n", len(b))
-			//fmt.Printf("Begin Address: 0x%x, End Address 0x%x\n", splittedBeginAddr, splittedEndAddr)
 			findDataInSplittedMemory(&b, targetBytes, searchLength, splittedBeginAddr, 0, &foundAddrs)
 			bufferPool.Put(b)
-			if len(foundAddrs) > 10000 {
+			if len(foundAddrs) > 5000 {
 				fmt.Println("Too many addresses with target data found...")
-				return foundAddrs, nil
+				return foundAddrs, errors.New("Error: Too many addresses")
 			}
 		}
 	}
-
 	return foundAddrs, nil
 }
 
@@ -101,4 +99,72 @@ func findDataInSplittedMemory(memory *[]byte, targetBytes []byte, searchLength i
 		offset += index + searchLength
 		findDataInSplittedMemory(memory, targetBytes, searchLength, beginAddr, offset, results)
 	}
+}
+
+func findString(memPath string, targetVal string, addrRanges [][2]int) ([]int, error) {
+	fmt.Println("Search UTF-8 String...")
+	targetBytes, _ := stringToBytes(targetVal)
+	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
+	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
+	fmt.Printf("Found: %d!!!\n", len(foundAddrs))
+	if len(foundAddrs) < 10 {
+		for _, v := range foundAddrs {
+			fmt.Printf("Address: 0x%x\n", v)
+		}
+	}
+	return foundAddrs, nil
+}
+
+func findWord(memPath string, targetVal string, addrRanges [][2]int) ([]int, error) {
+	fmt.Println("Search Word...")
+	targetBytes, err := wordToBytes(targetVal)
+	if err != nil {
+		fmt.Printf("parsing %s: value out of range\n", targetVal)
+		return nil, err
+	}
+	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
+	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
+	fmt.Printf("Found: %d!!!\n", len(foundAddrs))
+	if len(foundAddrs) < 10 {
+		for _, v := range foundAddrs {
+			fmt.Printf("Address: 0x%x\n", v)
+		}
+	}
+	return foundAddrs, nil
+}
+
+func findDword(memPath string, targetVal string, addrRanges [][2]int) ([]int, error) {
+	fmt.Println("Search Double Word...")
+	targetBytes, err := dwordToBytes(targetVal)
+	if err != nil {
+		fmt.Printf("parsing %s: value out of range\n", targetVal)
+		return nil, err
+	}
+	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
+	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
+	fmt.Printf("Found: %d!!!\n", len(foundAddrs))
+	if len(foundAddrs) < 10 {
+		for _, v := range foundAddrs {
+			fmt.Printf("Address: 0x%x\n", v)
+		}
+	}
+	return foundAddrs, nil
+}
+
+func findQword(memPath string, targetVal string, addrRanges [][2]int) ([]int, error) {
+	fmt.Println("Search Quad Word...")
+	targetBytes, err := dwordToBytes(targetVal)
+	if err != nil {
+		fmt.Printf("parsing %s: value out of range\n", targetVal)
+		return nil, err
+	}
+	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
+	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
+	fmt.Printf("Found: %d!!!\n", len(foundAddrs))
+	if len(foundAddrs) < 10 {
+		for _, v := range foundAddrs {
+			fmt.Printf("Address: 0x%x\n", v)
+		}
+	}
+	return foundAddrs, nil
 }
