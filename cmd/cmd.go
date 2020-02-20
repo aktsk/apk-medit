@@ -21,6 +21,7 @@ var isAttached = false
 type Found struct {
 	addrs     []int
 	converter func(string) ([]byte, error)
+	dataType  string
 }
 
 func Plist() (string, error) {
@@ -107,14 +108,17 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 		founds = append(founds, Found{
 			addrs:     foundAddrs,
 			converter: stringToBytes,
+			dataType:  "UTF-8 string",
 		})
 		fmt.Println("------------------------")
+
 		// search int
 		foundAddrs, err = findWord(memPath, targetVal, addrRanges)
 		if err == nil {
 			founds = append(founds, Found{
 				addrs:     foundAddrs,
 				converter: wordToBytes,
+				dataType:  "word",
 			})
 			return founds, nil
 		}
@@ -124,6 +128,7 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 			founds = append(founds, Found{
 				addrs:     foundAddrs,
 				converter: dwordToBytes,
+				dataType:  "dword",
 			})
 			return founds, nil
 		}
@@ -133,6 +138,7 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 			founds = append(founds, Found{
 				addrs:     foundAddrs,
 				converter: qwordToBytes,
+				dataType:  "qword",
 			})
 			return founds, nil
 		}
@@ -142,6 +148,7 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 		founds = append(founds, Found{
 			addrs:     foundAddrs,
 			converter: stringToBytes,
+			dataType:  "UTF-8 string",
 		})
 		return founds, nil
 
@@ -151,6 +158,7 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 			founds = append(founds, Found{
 				addrs:     foundAddrs,
 				converter: wordToBytes,
+				dataType:  "word",
 			})
 			return founds, nil
 		}
@@ -161,6 +169,7 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 			founds = append(founds, Found{
 				addrs:     foundAddrs,
 				converter: dwordToBytes,
+				dataType:  "dword",
 			})
 			return founds, nil
 		}
@@ -171,6 +180,7 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 			founds = append(founds, Found{
 				addrs:     foundAddrs,
 				converter: qwordToBytes,
+				dataType:  "qword",
 			})
 			return founds, nil
 		}
@@ -193,6 +203,7 @@ func Filter(pid string, targetVal string, prevFounds []Found) ([]Found, error) {
 	for i, prevFound := range prevFounds {
 		targetBytes, _ := prevFound.converter(targetVal)
 		targetLength := len(targetBytes)
+		fmt.Printf("Check previous results of searching %s...\n", prevFound.dataType)
 		fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
 		for _, prevAddr := range prevFound.addrs {
 			for _, writable := range writableAddrRanges {
@@ -211,6 +222,7 @@ func Filter(pid string, targetVal string, prevFounds []Found) ([]Found, error) {
 		founds = append(founds, Found{
 			addrs:     foundAddrs,
 			converter: prevFound.converter,
+			dataType:  prevFound.dataType,
 		})
 		if i != len(prevFounds)-1 {
 			fmt.Println("------------------------")

@@ -102,9 +102,10 @@ func completer(t prompt.Document) []prompt.Suggest {
 	return []prompt.Suggest{
 		{Text: "attach", Description: "Attach to the specified process."},
 		{Text: "attach <pid>", Description: "Attach to the process specified on the command line."},
-		{Text: "find <int>", Description: "TODO"},
-		{Text: "filter <int>", Description: "TODO"},
-		{Text: "patch  <int>", Description: "TODO"},
+		{Text: "find   <int>", Description: "Search the specified integer."},
+		{Text: "find   <datatype> <int>", Description: "Types can be specified are string, word, dword, qword."},
+		{Text: "filter <int>", Description: "Filter previous search results that match the current search results."},
+		{Text: "patch  <int>", Description: "Write the specified value on the address found by search."},
 		{Text: "detach", Description: "Detach from the attached process."},
 		{Text: "ps", Description: "Find the target process and if there is only one, specify it as the target."},
 		{Text: "exit"},
@@ -112,6 +113,7 @@ func completer(t prompt.Document) []prompt.Suggest {
 }
 
 func main() {
+	// for ptrace attach
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
