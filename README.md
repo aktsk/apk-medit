@@ -1,10 +1,19 @@
 # medit
-![](https://github.com/aktsk/medit/workflows/Go/badge.svg)
+![](https://github.com/aktsk/medit/workflows/test/badge.svg)
 
 Medit is a simple memory search and edit tool on Android app.
 
-# How to Build
-After the build is complete, if adb is connected, place the built binary in `/data/local/tmp/` on Android.
+# Installation 
+Download the binary from [GitHub Releases](https://github.com/aktsk/medit/releases/), please push the binary in `/data/local/tmp/` on Android.
+
+```
+$ adb push medit /data/local/tmp/medit
+medit: 1 file pushed. 29.0 MB/s (3135769 bytes in 0.103s)
+```
+
+## How to Build
+
+After the build is complete, if adb is connected, it push the built binary in `/data/local/tmp/` on Android.
 
 ```
 $ make
@@ -26,5 +35,5 @@ $ ./medit
 # Test
 
 ```
-$ go test -v ./test
+$ make test
 ```
