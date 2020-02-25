@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -287,5 +288,17 @@ func wait(pid int) error {
 		return fmt.Errorf("wait failed: status is not stopped: ")
 	}
 
+	return nil
+}
+
+func Dump(pid string, beginAddress int, endAddress int) error {
+	memPath := fmt.Sprintf("/proc/%s/mem", pid)
+	memFile, _ := os.Open(memPath)
+	defer memFile.Close()
+
+	memSize := endAddress - beginAddress
+	buf := make([]byte, memSize)
+	memory := readMemory(memFile, buf, beginAddress, endAddress)
+	fmt.Printf("%s", hex.Dump(memory))
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/aktsk/medit/cmd"
@@ -87,6 +88,24 @@ func executor(in string) {
 			os.Exit(1)
 		}
 
+	} else if strings.HasPrefix(in, "dump") {
+		inputSlice := strings.Split(in, " ")
+		beginAddr, err := parseAddr(inputSlice[1])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		endAddr, err := parseAddr(inputSlice[2])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		if err := cmd.Dump(appPID, beginAddr, endAddr); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
 	} else if in == "exit" {
 		os.Exit(0)
 
@@ -96,6 +115,18 @@ func executor(in string) {
 		fmt.Println("Command not found.")
 	}
 	return
+}
+
+func parseAddr(arg string) (int, error) {
+	address, err := strconv.ParseInt(arg, 16, 64)
+	if err == nil {
+		return int(address), nil
+	}
+	address, err = strconv.ParseInt(arg, 10, 64)
+	if err == nil {
+		return int(address), nil
+	}
+	return 0, err
 }
 
 func completer(t prompt.Document) []prompt.Suggest {
@@ -108,6 +139,7 @@ func completer(t prompt.Document) []prompt.Suggest {
 		{Text: "patch  <int>", Description: "Write the specified value on the address found by search."},
 		{Text: "detach", Description: "Detach from the attached process."},
 		{Text: "ps", Description: "Find the target process and if there is only one, specify it as the target."},
+		{Text: "dump <begin addr> <end addr>", Description: "display memory dump like hexdump"},
 		{Text: "exit"},
 	}
 }
