@@ -118,6 +118,7 @@ func executor(in string) {
 }
 
 func parseAddr(arg string) (int, error) {
+	arg = strings.Replace(arg, "0x", "", 1)
 	address, err := strconv.ParseInt(arg, 16, 64)
 	if err == nil {
 		return int(address), nil

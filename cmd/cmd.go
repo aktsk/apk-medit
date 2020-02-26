@@ -299,6 +299,8 @@ func Dump(pid string, beginAddress int, endAddress int) error {
 	memSize := endAddress - beginAddress
 	buf := make([]byte, memSize)
 	memory := readMemory(memFile, buf, beginAddress, endAddress)
+	fmt.Printf("Address range: 0x%x - 0x%x\n", beginAddress, endAddress)
+	fmt.Println("--------------------------------------------")
 	fmt.Printf("%s", hex.Dump(memory))
 	return nil
 }
