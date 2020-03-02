@@ -107,6 +107,7 @@ func executor(in string) {
 		}
 
 	} else if in == "exit" {
+		fmt.Println("Bye!")
 		os.Exit(0)
 
 	} else if in == "" {
@@ -132,12 +133,11 @@ func parseAddr(arg string) (int, error) {
 
 func completer(t prompt.Document) []prompt.Suggest {
 	return []prompt.Suggest{
-		{Text: "attach", Description: "Attach to the specified process."},
-		{Text: "attach <pid>", Description: "Attach to the process specified on the command line."},
 		{Text: "find   <int>", Description: "Search the specified integer."},
 		{Text: "find   <datatype> <int>", Description: "Types can be specified are string, word, dword, qword."},
 		{Text: "filter <int>", Description: "Filter previous search results that match the current search results."},
 		{Text: "patch  <int>", Description: "Write the specified value on the address found by search."},
+		{Text: "attach", Description: "Attach to the target process by ptrace."},
 		{Text: "detach", Description: "Detach from the attached process."},
 		{Text: "ps", Description: "Find the target process and if there is only one, specify it as the target."},
 		{Text: "dump <begin addr> <end addr>", Description: "display memory dump like hexdump"},
@@ -159,7 +159,7 @@ func main() {
 	p := prompt.New(
 		executor,
 		completer,
-		prompt.OptionTitle("medit: simple MEmory eDIT tool"),
+		prompt.OptionTitle("medit: MEmory eDIT tool"),
 		prompt.OptionPrefix("> "),
 		prompt.OptionInputTextColor(prompt.Cyan),
 		prompt.OptionPrefixTextColor(prompt.DarkBlue),

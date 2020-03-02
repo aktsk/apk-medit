@@ -41,14 +41,14 @@ func Plist() (string, error) {
 		pid := s[1]
 		cmd := s[8]
 		if pid != "PID" && cmd != "" && cmd != "ps" && cmd != "sh" && cmd != "medit" {
-			fmt.Printf("Target Package: %s, PID: %s\n", cmd, pid)
+			fmt.Printf("Package: %s, PID: %s\n", cmd, pid)
 			pids = append(pids, pid)
 		}
 		line, err = out.ReadString('\n')
 	}
 
 	if len(pids) == 1 {
-		fmt.Printf("Attach target PID has been set to %s.\n", pids[0])
+		fmt.Printf("Target PID has been set to %s.\n", pids[0])
 		return pids[0], nil
 	}
 	return "", nil
@@ -105,84 +105,102 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 
 	if dataType == "all" {
 		// search string
-		foundAddrs, _ := findString(memPath, targetVal, addrRanges)
-		founds = append(founds, Found{
-			addrs:     foundAddrs,
-			converter: stringToBytes,
-			dataType:  "UTF-8 string",
-		})
+		foundAddrs, err := findString(memPath, targetVal, addrRanges)
+		if err == nil && len(foundAddrs) > 0 {
+			founds = append(founds, Found{
+				addrs:     foundAddrs,
+				converter: stringToBytes,
+				dataType:  "UTF-8 string",
+			})
+		}
 		fmt.Println("------------------------")
 
 		// search int
 		foundAddrs, err = findWord(memPath, targetVal, addrRanges)
 		if err == nil {
-			founds = append(founds, Found{
-				addrs:     foundAddrs,
-				converter: wordToBytes,
-				dataType:  "word",
-			})
+			if len(foundAddrs) > 0 {
+				founds = append(founds, Found{
+					addrs:     foundAddrs,
+					converter: wordToBytes,
+					dataType:  "word",
+				})
+			}
 			return founds, nil
 		}
 		fmt.Println("------------------------")
 		foundAddrs, err = findDword(memPath, targetVal, addrRanges)
 		if err == nil {
-			founds = append(founds, Found{
-				addrs:     foundAddrs,
-				converter: dwordToBytes,
-				dataType:  "dword",
-			})
+			if len(foundAddrs) > 0 {
+				founds = append(founds, Found{
+					addrs:     foundAddrs,
+					converter: dwordToBytes,
+					dataType:  "dword",
+				})
+			}
 			return founds, nil
 		}
 		fmt.Println("------------------------")
 		foundAddrs, err = findQword(memPath, targetVal, addrRanges)
 		if err == nil {
-			founds = append(founds, Found{
-				addrs:     foundAddrs,
-				converter: qwordToBytes,
-				dataType:  "qword",
-			})
+			if len(foundAddrs) > 0 {
+				founds = append(founds, Found{
+					addrs:     foundAddrs,
+					converter: qwordToBytes,
+					dataType:  "qword",
+				})
+			}
 			return founds, nil
 		}
 
 	} else if dataType == "string" {
 		foundAddrs, _ := findString(memPath, targetVal, addrRanges)
-		founds = append(founds, Found{
-			addrs:     foundAddrs,
-			converter: stringToBytes,
-			dataType:  "UTF-8 string",
-		})
-		return founds, nil
+		if err == nil {
+			if len(foundAddrs) > 0 {
+				founds = append(founds, Found{
+					addrs:     foundAddrs,
+					converter: stringToBytes,
+					dataType:  "UTF-8 string",
+				})
+			}
+			return founds, nil
+		}
 
 	} else if dataType == "word" {
 		foundAddrs, err := findWord(memPath, targetVal, addrRanges)
-		if err != nil {
-			founds = append(founds, Found{
-				addrs:     foundAddrs,
-				converter: wordToBytes,
-				dataType:  "word",
-			})
+		if err == nil {
+			if len(foundAddrs) > 0 {
+				founds = append(founds, Found{
+					addrs:     foundAddrs,
+					converter: wordToBytes,
+					dataType:  "word",
+				})
+			}
 			return founds, nil
 		}
 
 	} else if dataType == "dword" {
 		foundAddrs, err := findDword(memPath, targetVal, addrRanges)
-		if err != nil {
-			founds = append(founds, Found{
-				addrs:     foundAddrs,
-				converter: dwordToBytes,
-				dataType:  "dword",
-			})
+		if err == nil {
+			if len(foundAddrs) > 0 {
+				founds = append(founds, Found{
+					addrs:     foundAddrs,
+					converter: dwordToBytes,
+					dataType:  "dword",
+				})
+			}
 			return founds, nil
 		}
 
 	} else if dataType == "qword" {
 		foundAddrs, err := findQword(memPath, targetVal, addrRanges)
-		if err != nil {
-			founds = append(founds, Found{
-				addrs:     foundAddrs,
-				converter: qwordToBytes,
-				dataType:  "qword",
-			})
+		if err == nil {
+			if len(foundAddrs) > 0 {
+				founds = append(founds, Found{
+					addrs:     foundAddrs,
+					converter: qwordToBytes,
+					dataType:  "qword",
+				})
+			}
 			return founds, nil
 		}
 	}
@@ -249,6 +267,7 @@ func Patch(pid string, targetVal string, targetAddrs []Found) error {
 			}
 		}
 	}
+	fmt.Println("Successfully patched!!")
 	return nil
 }
 
