@@ -52,14 +52,14 @@ Search the specified integer on memory.
 > find 999982
 Search UTF-8 String...
 Target Value: 999982([57 57 57 57 56 50])
-Found: 0!!!
+Found: 0!
 ------------------------
 Search Word...
 parsing 999982: value out of range
 ------------------------
 Search Double Word...
 Target Value: 999982([46 66 15 0])
-Found: 1!!!
+Found: 1!
 Address: 0xe7021f70
 ```
 
@@ -69,7 +69,7 @@ You can also specify datatype such as string, word, dword, qword.
 > find dword 999996
 Search Double Word...
 Target Value: 999996([60 66 15 0])
-Found: 1!!!
+Found: 1!
 Address: 0xe7021f70
 ```
 
@@ -81,7 +81,7 @@ Filter previous search results that match the current search results.
 > filter 993881
 Check previous results of searching dword...
 Target Value: 993881([89 42 15 0])
-Found: 1!!!
+Found: 1!
 Address: 0xe7021f70
 ```
 
@@ -91,7 +91,7 @@ Write the specified value on the address found by search.
 
 ```
 > patch 10
-Successfully patched!!
+Successfully patched!
 ```
 
 #### ps

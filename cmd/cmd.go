@@ -267,7 +267,7 @@ func Patch(pid string, targetVal string, targetAddrs []Found) error {
 			}
 		}
 	}
-	fmt.Println("Successfully patched!!")
+	fmt.Println("Successfully patched!")
 	return nil
 }
 
