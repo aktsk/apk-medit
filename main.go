@@ -140,7 +140,7 @@ func completer(t prompt.Document) []prompt.Suggest {
 		{Text: "attach", Description: "Attach to the target process by ptrace."},
 		{Text: "detach", Description: "Detach from the attached process."},
 		{Text: "ps", Description: "Find the target process and if there is only one, specify it as the target."},
-		{Text: "dump <begin addr> <end addr>", Description: "display memory dump like hexdump"},
+		{Text: "dump <begin addr> <end addr>", Description: "Display memory dump like hexdump"},
 		{Text: "exit"},
 	}
 }
