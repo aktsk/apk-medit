@@ -1,14 +1,15 @@
 # apk-medit
 
-![](https://github.com/aktsk/apk-medit/workflows/test/badge.svg)
+[![GitHub release](https://img.shields.io/github/v/release/aktsk/apk-medit.svg)](https://github.com/aktsk/apk-medit/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/aktsk/apk-medit/blob/master/LICENSE)
+![](https://github.com/aktsk/apk-medit/workflows/test/badge.svg)
 
 Apk-medit is a memory search and patch tool for debuggable apk without root & ndk.
 It was created for mobile game security testing.
 
 ## Demo
 
-This is a demo that uses medit to clear a game that requires one million taps to clear.
+This is a demo that uses apk-medit to clear a game that requires one million taps to clear.
 
 <img src="screenshots/terminal.gif" width=680px> <img src="screenshots/demo-app.gif" width=195px>
 
@@ -35,7 +36,13 @@ medit: 1 file pushed. 23.7 MB/s (3131205 bytes in 0.126s)
 
 ## Usage
 
-Use the `run-as` command to read files used by the target debuggable app.
+Use the `run-as` command to read files used by the target app, so apk-medit can only be used with apps that have the debuggable attribute enabled.
+To enable the debuggable attribute, open `AndroidManifest.xml`, add the following xml attribute in application xml node:
+
+```
+android:debuggable="true"
+```
+
 After running the `run-as` command, directory is automatically changed. So copy `medit` from `/data/local/tmp/`.
 Running `medit` launches an interactive prompt.
 
