@@ -1,4 +1,4 @@
-package cmd
+package memory
 
 import (
 	"bufio"
@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/aktsk/apk-medit/pkg/converter"
 )
 
 var splitSize = 0x50000000
@@ -18,7 +20,7 @@ var bufferPool = sync.Pool{
 	},
 }
 
-func getWritableAddrRanges(mapsPath string) ([][2]int, error) {
+func GetWritableAddrRanges(mapsPath string) ([][2]int, error) {
 	addrRanges := [][2]int{}
 	ignorePaths := []string{"/vendor/lib64/", "/system/lib64/", "/system/bin/", "/system/framework/", "/data/dalvik-cache/"}
 	file, err := os.OpenFile(mapsPath, os.O_RDONLY, 0600)
@@ -55,7 +57,7 @@ func getWritableAddrRanges(mapsPath string) ([][2]int, error) {
 	return addrRanges, nil
 }
 
-func findDataInAddrRanges(memPath string, targetBytes []byte, addrRanges [][2]int) ([]int, error) {
+func FindDataInAddrRanges(memPath string, targetBytes []byte, addrRanges [][2]int) ([]int, error) {
 	foundAddrs := []int{}
 	f, err := os.OpenFile(memPath, os.O_RDONLY, 0600)
 	defer f.Close()
@@ -76,7 +78,7 @@ func findDataInAddrRanges(memPath string, targetBytes []byte, addrRanges [][2]in
 				splittedEndAddr = beginAddr + splitIndex
 			}
 			b := bufferPool.Get().([]byte)[:(splittedEndAddr - splittedBeginAddr)]
-			readMemory(f, b, splittedBeginAddr, splittedEndAddr)
+			ReadMemory(f, b, splittedBeginAddr, splittedEndAddr)
 			findDataInSplittedMemory(&b, targetBytes, searchLength, splittedBeginAddr, 0, &foundAddrs)
 			bufferPool.Put(b)
 			if len(foundAddrs) > 5000 {
@@ -101,11 +103,11 @@ func findDataInSplittedMemory(memory *[]byte, targetBytes []byte, searchLength i
 	}
 }
 
-func findString(memPath string, targetVal string, addrRanges [][2]int) ([]int, error) {
+func FindString(memPath string, targetVal string, addrRanges [][2]int) ([]int, error) {
 	fmt.Println("Search UTF-8 String...")
-	targetBytes, _ := stringToBytes(targetVal)
+	targetBytes, _ := converter.StringToBytes(targetVal)
 	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
-	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
+	foundAddrs, _ := FindDataInAddrRanges(memPath, targetBytes, addrRanges)
 	fmt.Printf("Found: %d!\n", len(foundAddrs))
 	if len(foundAddrs) < 10 {
 		for _, v := range foundAddrs {
@@ -115,15 +117,15 @@ func findString(memPath string, targetVal string, addrRanges [][2]int) ([]int, e
 	return foundAddrs, nil
 }
 
-func findWord(memPath string, targetVal string, addrRanges [][2]int) ([]int, error) {
+func FindWord(memPath string, targetVal string, addrRanges [][2]int) ([]int, error) {
 	fmt.Println("Search Word...")
-	targetBytes, err := wordToBytes(targetVal)
+	targetBytes, err := converter.WordToBytes(targetVal)
 	if err != nil {
 		fmt.Printf("parsing %s: value out of range\n", targetVal)
 		return nil, err
 	}
 	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
-	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
+	foundAddrs, _ := FindDataInAddrRanges(memPath, targetBytes, addrRanges)
 	fmt.Printf("Found: %d!\n", len(foundAddrs))
 	if len(foundAddrs) < 10 {
 		for _, v := range foundAddrs {
@@ -133,15 +135,15 @@ func findWord(memPath string, targetVal string, addrRanges [][2]int) ([]int, err
 	return foundAddrs, nil
 }
 
-func findDword(memPath string, targetVal string, addrRanges [][2]int) ([]int, error) {
+func FindDword(memPath string, targetVal string, addrRanges [][2]int) ([]int, error) {
 	fmt.Println("Search Double Word...")
-	targetBytes, err := dwordToBytes(targetVal)
+	targetBytes, err := converter.DwordToBytes(targetVal)
 	if err != nil {
 		fmt.Printf("parsing %s: value out of range\n", targetVal)
 		return nil, err
 	}
 	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
-	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
+	foundAddrs, _ := FindDataInAddrRanges(memPath, targetBytes, addrRanges)
 	fmt.Printf("Found: %d!\n", len(foundAddrs))
 	if len(foundAddrs) < 10 {
 		for _, v := range foundAddrs {
@@ -151,15 +153,15 @@ func findDword(memPath string, targetVal string, addrRanges [][2]int) ([]int, er
 	return foundAddrs, nil
 }
 
-func findQword(memPath string, targetVal string, addrRanges [][2]int) ([]int, error) {
+func FindQword(memPath string, targetVal string, addrRanges [][2]int) ([]int, error) {
 	fmt.Println("Search Quad Word...")
-	targetBytes, err := dwordToBytes(targetVal)
+	targetBytes, err := converter.QwordToBytes(targetVal)
 	if err != nil {
 		fmt.Printf("parsing %s: value out of range\n", targetVal)
 		return nil, err
 	}
 	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
-	foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
+	foundAddrs, _ := FindDataInAddrRanges(memPath, targetBytes, addrRanges)
 	fmt.Printf("Found: %d!\n", len(foundAddrs))
 	if len(foundAddrs) < 10 {
 		for _, v := range foundAddrs {

@@ -1,4 +1,4 @@
-package cmd
+package converter
 
 import (
 	"encoding/binary"
@@ -6,12 +6,12 @@ import (
 )
 
 // UTF8 string
-func stringToBytes(arg string) ([]byte, error) {
+func StringToBytes(arg string) ([]byte, error) {
 	rs := []rune(arg)
 	return []byte(string(rs)), nil
 }
 
-func wordToBytes(arg string) ([]byte, error) {
+func WordToBytes(arg string) ([]byte, error) {
 	searchBytes := make([]byte, 2)
 	targetVal, err := strconv.ParseUint(arg, 10, 16)
 	if err != nil {
@@ -24,7 +24,7 @@ func wordToBytes(arg string) ([]byte, error) {
 	return searchBytes, nil
 }
 
-func dwordToBytes(arg string) ([]byte, error) {
+func DwordToBytes(arg string) ([]byte, error) {
 	searchBytes := make([]byte, 4)
 	targetVal, err := strconv.ParseUint(arg, 10, 32)
 	if err != nil {
@@ -34,7 +34,7 @@ func dwordToBytes(arg string) ([]byte, error) {
 	return searchBytes, nil
 }
 
-func qwordToBytes(arg string) ([]byte, error) {
+func QwordToBytes(arg string) ([]byte, error) {
 	searchBytes := make([]byte, 8)
 	targetVal, err := strconv.ParseUint(arg, 10, 64)
 	if err != nil {

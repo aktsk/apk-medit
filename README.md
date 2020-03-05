@@ -1,9 +1,9 @@
 # apk-medit
 
-![](https://github.com/aktsk/medit/workflows/test/badge.svg)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/aktsk/medit/blob/master/LICENSE)
+![](https://github.com/aktsk/apk-medit/workflows/test/badge.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/aktsk/apk-medit/blob/master/LICENSE)
 
-Apk-medit is a memory search and patch tool for debuggable app on android. 
+Apk-medit is a memory search and patch tool for debuggable apk without root & ndk.
 It was created for mobile game security testing.
 
 ## Demo
@@ -14,7 +14,7 @@ This is a demo that uses medit to clear a game that requires one million taps to
 
 ## Installation
 
-Download the binary from [GitHub Releases](https://github.com/aktsk/medit/releases/), please push the binary in `/data/local/tmp/` on Android.
+Download the binary from [GitHub Releases](https://github.com/aktsk/apk-medit/releases/), please push the binary in `/data/local/tmp/` on an android device.
 
 ```
 $ adb push medit /data/local/tmp/medit
@@ -24,7 +24,7 @@ medit: 1 file pushed. 29.0 MB/s (3135769 bytes in 0.103s)
 ### How to Build
 
 You can build with make command. It requires a go compiler.
-After the build is complete, if adb is connected, it push the built binary in `/data/local/tmp/` on Android.
+After the build is complete, if adb is connected, it push the built binary in `/data/local/tmp/` on an android device.
 
 ```
 $ make

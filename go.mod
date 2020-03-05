@@ -1,4 +1,4 @@
-module github.com/aktsk/medit
+module github.com/aktsk/apk-medit
 
 go 1.13
 

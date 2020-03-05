@@ -14,6 +14,9 @@ import (
 	"strings"
 
 	sys "golang.org/x/sys/unix"
+
+	"github.com/aktsk/apk-medit/pkg/converter"
+	"github.com/aktsk/apk-medit/pkg/memory"
 )
 
 var tids []int
@@ -98,54 +101,54 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 	// search value in /proc/<pid>/mem
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
 	memPath := fmt.Sprintf("/proc/%s/mem", pid)
-	addrRanges, err := getWritableAddrRanges(mapsPath)
+	addrRanges, err := memory.GetWritableAddrRanges(mapsPath)
 	if err != nil {
 		return nil, err
 	}
 
 	if dataType == "all" {
 		// search string
-		foundAddrs, err := findString(memPath, targetVal, addrRanges)
+		foundAddrs, err := memory.FindString(memPath, targetVal, addrRanges)
 		if err == nil && len(foundAddrs) > 0 {
 			founds = append(founds, Found{
 				addrs:     foundAddrs,
-				converter: stringToBytes,
+				converter: converter.StringToBytes,
 				dataType:  "UTF-8 string",
 			})
 		}
 		fmt.Println("------------------------")
 
 		// search int
-		foundAddrs, err = findWord(memPath, targetVal, addrRanges)
+		foundAddrs, err = memory.FindWord(memPath, targetVal, addrRanges)
 		if err == nil {
 			if len(foundAddrs) > 0 {
 				founds = append(founds, Found{
 					addrs:     foundAddrs,
-					converter: wordToBytes,
+					converter: converter.WordToBytes,
 					dataType:  "word",
 				})
 			}
 			return founds, nil
 		}
 		fmt.Println("------------------------")
-		foundAddrs, err = findDword(memPath, targetVal, addrRanges)
+		foundAddrs, err = memory.FindDword(memPath, targetVal, addrRanges)
 		if err == nil {
 			if len(foundAddrs) > 0 {
 				founds = append(founds, Found{
 					addrs:     foundAddrs,
-					converter: dwordToBytes,
+					converter: converter.DwordToBytes,
 					dataType:  "dword",
 				})
 			}
 			return founds, nil
 		}
 		fmt.Println("------------------------")
-		foundAddrs, err = findQword(memPath, targetVal, addrRanges)
+		foundAddrs, err = memory.FindQword(memPath, targetVal, addrRanges)
 		if err == nil {
 			if len(foundAddrs) > 0 {
 				founds = append(founds, Found{
 					addrs:     foundAddrs,
-					converter: qwordToBytes,
+					converter: converter.QwordToBytes,
 					dataType:  "qword",
 				})
 			}
@@ -153,12 +156,12 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 		}
 
 	} else if dataType == "string" {
-		foundAddrs, _ := findString(memPath, targetVal, addrRanges)
+		foundAddrs, _ := memory.FindString(memPath, targetVal, addrRanges)
 		if err == nil {
 			if len(foundAddrs) > 0 {
 				founds = append(founds, Found{
 					addrs:     foundAddrs,
-					converter: stringToBytes,
+					converter: converter.StringToBytes,
 					dataType:  "UTF-8 string",
 				})
 			}
@@ -166,12 +169,12 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 		}
 
 	} else if dataType == "word" {
-		foundAddrs, err := findWord(memPath, targetVal, addrRanges)
+		foundAddrs, err := memory.FindWord(memPath, targetVal, addrRanges)
 		if err == nil {
 			if len(foundAddrs) > 0 {
 				founds = append(founds, Found{
 					addrs:     foundAddrs,
-					converter: wordToBytes,
+					converter: converter.WordToBytes,
 					dataType:  "word",
 				})
 			}
@@ -179,12 +182,12 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 		}
 
 	} else if dataType == "dword" {
-		foundAddrs, err := findDword(memPath, targetVal, addrRanges)
+		foundAddrs, err := memory.FindDword(memPath, targetVal, addrRanges)
 		if err == nil {
 			if len(foundAddrs) > 0 {
 				founds = append(founds, Found{
 					addrs:     foundAddrs,
-					converter: dwordToBytes,
+					converter: converter.DwordToBytes,
 					dataType:  "dword",
 				})
 			}
@@ -192,12 +195,12 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 		}
 
 	} else if dataType == "qword" {
-		foundAddrs, err := findQword(memPath, targetVal, addrRanges)
+		foundAddrs, err := memory.FindQword(memPath, targetVal, addrRanges)
 		if err == nil {
 			if len(foundAddrs) > 0 {
 				founds = append(founds, Found{
 					addrs:     foundAddrs,
-					converter: qwordToBytes,
+					converter: converter.QwordToBytes,
 					dataType:  "qword",
 				})
 			}
@@ -212,7 +215,7 @@ func Filter(pid string, targetVal string, prevFounds []Found) ([]Found, error) {
 	founds := []Found{}
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
 	memPath := fmt.Sprintf("/proc/%s/mem", pid)
-	writableAddrRanges, err := getWritableAddrRanges(mapsPath)
+	writableAddrRanges, err := memory.GetWritableAddrRanges(mapsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +234,7 @@ func Filter(pid string, targetVal string, prevFounds []Found) ([]Found, error) {
 				}
 			}
 		}
-		foundAddrs, _ := findDataInAddrRanges(memPath, targetBytes, addrRanges)
+		foundAddrs, _ := memory.FindDataInAddrRanges(memPath, targetBytes, addrRanges)
 		fmt.Printf("Found: %d!!!\n", len(foundAddrs))
 		if len(foundAddrs) < 10 {
 			for _, v := range foundAddrs {
@@ -261,7 +264,7 @@ func Patch(pid string, targetVal string, targetAddrs []Found) error {
 	for _, found := range targetAddrs {
 		targetBytes, _ := found.converter(targetVal)
 		for _, targetAddr := range found.addrs {
-			err := writeMemory(f, targetAddr, targetBytes)
+			err := memory.WriteMemory(f, targetAddr, targetBytes)
 			if err != nil {
 				return err
 			}
@@ -317,7 +320,7 @@ func Dump(pid string, beginAddress int, endAddress int) error {
 
 	memSize := endAddress - beginAddress
 	buf := make([]byte, memSize)
-	memory := readMemory(memFile, buf, beginAddress, endAddress)
+	memory := memory.ReadMemory(memFile, buf, beginAddress, endAddress)
 	fmt.Printf("Address range: 0x%x - 0x%x\n", beginAddress, endAddress)
 	fmt.Println("--------------------------------------------")
 	fmt.Printf("%s", hex.Dump(memory))
