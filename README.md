@@ -25,7 +25,7 @@ medit: 1 file pushed. 29.0 MB/s (3135769 bytes in 0.103s)
 ### How to Build
 
 You can build with make command. It requires a go compiler.
-After the build is complete, if adb is connected, it push the built binary in `/data/local/tmp/` on an android device.
+After the build is complete, if adb is connected, it pushes the built binary in `/data/local/tmp/` on an android device.
 
 ```
 $ make
