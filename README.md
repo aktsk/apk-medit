@@ -7,6 +7,12 @@
 Apk-medit is a memory search and patch tool for debuggable apk without root & ndk.
 It was created for mobile game security testing.
 
+## Motivation
+
+Memory modification is the easiest way to cheat in games, it is one of the items to be checked in the security test.
+There are also cheat tools that can be used casually like GameGuardian.
+However, there were no tools available for non-root device and CUI. So I made it as a security testing tool.
+
 ## Demo
 
 This is a demo that uses apk-medit to clear a game that requires one million taps to clear.
