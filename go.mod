@@ -1,6 +1,6 @@
 module github.com/aktsk/apk-medit
 
-go 1.13
+go 1.14
 
 require (
 	github.com/c-bata/go-prompt v0.2.3
