@@ -81,7 +81,7 @@ func FindDataInAddrRanges(memPath string, targetBytes []byte, addrRanges [][2]in
 			ReadMemory(f, b, splittedBeginAddr, splittedEndAddr)
 			findDataInSplittedMemory(&b, targetBytes, searchLength, splittedBeginAddr, 0, &foundAddrs)
 			bufferPool.Put(b)
-			if len(foundAddrs) > 5000 {
+			if len(foundAddrs) > 60000 {
 				fmt.Println("Too many addresses with target data found...")
 				return foundAddrs, errors.New("Error: Too many addresses")
 			}
