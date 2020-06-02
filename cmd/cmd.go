@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -38,22 +39,27 @@ func Plist() (string, error) {
 
 	re := regexp.MustCompile(`\s+`)
 	line, err := out.ReadString('\n')
-	pids := []string{}
+	pids := make(map[string]string)
 	for err == nil && len(line) != 0 {
 		s := strings.Split(re.ReplaceAllString(string(line), " "), " ")
 		pid := s[1]
 		cmd := s[8]
 		if pid != "PID" && cmd != "" && cmd != "ps" && cmd != "sh" && cmd != "medit" {
 			fmt.Printf("Package: %s, PID: %s\n", cmd, pid)
-			pids = append(pids, pid)
+			pids[cmd] = pid
 		}
 		line, err = out.ReadString('\n')
 	}
 
-	if len(pids) == 1 {
-		fmt.Printf("Target PID has been set to %s.\n", pids[0])
-		return pids[0], nil
-	}
+	current_path, _ := os.Getwd()
+	_, package_name := filepath.Split(current_path)
+	for cmd, pid := range pids {
+        if cmd == package_name {
+			fmt.Printf("Target PID has been set to %s.\n", pid)
+			return pid, nil
+		}
+    }
+
 	return "", nil
 }
 
