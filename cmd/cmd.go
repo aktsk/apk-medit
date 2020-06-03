@@ -241,7 +241,7 @@ func Filter(pid string, targetVal string, prevFounds []Found) ([]Found, error) {
 			}
 		}
 		foundAddrs, _ := memory.FindDataInAddrRanges(memPath, targetBytes, addrRanges)
-		fmt.Printf("Found: %d!!!\n", len(foundAddrs))
+		fmt.Printf("Found: %d!!\n", len(foundAddrs))
 		if len(foundAddrs) < 10 {
 			for _, v := range foundAddrs {
 				fmt.Printf("Address: 0x%x\n", v)

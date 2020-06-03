@@ -108,7 +108,7 @@ func FindString(memPath string, targetVal string, addrRanges [][2]int) ([]int, e
 	targetBytes, _ := converter.StringToBytes(targetVal)
 	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
 	foundAddrs, _ := FindDataInAddrRanges(memPath, targetBytes, addrRanges)
-	fmt.Printf("Found: %d!\n", len(foundAddrs))
+	fmt.Printf("Found: %d!!\n", len(foundAddrs))
 	if len(foundAddrs) < 10 {
 		for _, v := range foundAddrs {
 			fmt.Printf("Address: 0x%x\n", v)
@@ -126,7 +126,7 @@ func FindWord(memPath string, targetVal string, addrRanges [][2]int) ([]int, err
 	}
 	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
 	foundAddrs, _ := FindDataInAddrRanges(memPath, targetBytes, addrRanges)
-	fmt.Printf("Found: %d!\n", len(foundAddrs))
+	fmt.Printf("Found: %d!!\n", len(foundAddrs))
 	if len(foundAddrs) < 10 {
 		for _, v := range foundAddrs {
 			fmt.Printf("Address: 0x%x\n", v)
@@ -144,7 +144,7 @@ func FindDword(memPath string, targetVal string, addrRanges [][2]int) ([]int, er
 	}
 	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
 	foundAddrs, _ := FindDataInAddrRanges(memPath, targetBytes, addrRanges)
-	fmt.Printf("Found: %d!\n", len(foundAddrs))
+	fmt.Printf("Found: %d!!\n", len(foundAddrs))
 	if len(foundAddrs) < 10 {
 		for _, v := range foundAddrs {
 			fmt.Printf("Address: 0x%x\n", v)
@@ -162,7 +162,7 @@ func FindQword(memPath string, targetVal string, addrRanges [][2]int) ([]int, er
 	}
 	fmt.Printf("Target Value: %s(%v)\n", targetVal, targetBytes)
 	foundAddrs, _ := FindDataInAddrRanges(memPath, targetBytes, addrRanges)
-	fmt.Printf("Found: %d!\n", len(foundAddrs))
+	fmt.Printf("Found: %d!!\n", len(foundAddrs))
 	if len(foundAddrs) < 10 {
 		for _, v := range foundAddrs {
 			fmt.Printf("Address: 0x%x\n", v)
