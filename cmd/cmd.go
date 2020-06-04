@@ -121,6 +121,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				converter: converter.StringToBytes,
 				dataType:  "UTF-8 string",
 			})
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 		fmt.Println("------------------------")
 
@@ -135,6 +137,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 		fmt.Println("------------------------")
 		foundAddrs, err = memory.FindDword(memPath, targetVal, addrRanges)
@@ -147,6 +151,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 		fmt.Println("------------------------")
 		foundAddrs, err = memory.FindQword(memPath, targetVal, addrRanges)
@@ -159,6 +165,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 
 	} else if dataType == "string" {
@@ -172,6 +180,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 
 	} else if dataType == "word" {
@@ -185,6 +195,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 
 	} else if dataType == "dword" {
@@ -198,6 +210,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 
 	} else if dataType == "qword" {
@@ -211,6 +225,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 	}
 
