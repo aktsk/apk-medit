@@ -54,11 +54,11 @@ func Plist() (string, error) {
 	current_path, _ := os.Getwd()
 	_, package_name := filepath.Split(current_path)
 	for cmd, pid := range pids {
-        if cmd == package_name {
+		if cmd == package_name {
 			fmt.Printf("Target PID has been set to %s.\n", pid)
 			return pid, nil
 		}
-    }
+	}
 
 	return "", nil
 }
@@ -104,10 +104,11 @@ func Attach(pid string) error {
 
 func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 	founds := []Found{}
-	// search value in /proc/<pid>/mem
+	// parse /proc/<pid>/map, and get writable area
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
-	memPath := fmt.Sprintf("/proc/%s/mem", pid)
 	addrRanges, err := memory.GetWritableAddrRanges(mapsPath)
+	// search value in /proc/<pid>/mem
+	memPath := fmt.Sprintf("/proc/%s/mem", pid)
 	if err != nil {
 		return nil, err
 	}

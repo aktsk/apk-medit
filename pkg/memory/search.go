@@ -13,7 +13,7 @@ import (
 	"github.com/aktsk/apk-medit/pkg/converter"
 )
 
-var splitSize = 0x50000000
+var splitSize = 0x5000000
 var bufferPool = sync.Pool{
 	New: func() interface{} {
 		return make([]byte, splitSize)
@@ -58,19 +58,19 @@ func GetWritableAddrRanges(mapsPath string) ([][2]int, error) {
 }
 
 type Err struct {
-    err error
+	err error
 }
 
 func (e *Err) Error() string {
-    return fmt.Sprint(e.err)
+	return fmt.Sprint(e.err)
 }
 
 type ParseErr struct {
-    *Err
+	*Err
 }
 
 type TooManyErr struct {
-    *Err
+	*Err
 }
 
 func FindDataInAddrRanges(memPath string, targetBytes []byte, addrRanges [][2]int) ([]int, error) {
@@ -87,6 +87,7 @@ func FindDataInAddrRanges(memPath string, targetBytes []byte, addrRanges [][2]in
 			fmt.Println(err)
 		}
 		for i := 0; i < (memSize/splitSize)+1; i++ {
+			// target memory is too big to read all of it, so split it and then search in memory
 			splitIndex := (i + 1) * splitSize
 			splittedBeginAddr := beginAddr + i*splitSize
 			splittedEndAddr := endAddr
@@ -97,7 +98,7 @@ func FindDataInAddrRanges(memPath string, targetBytes []byte, addrRanges [][2]in
 			ReadMemory(f, b, splittedBeginAddr, splittedEndAddr)
 			findDataInSplittedMemory(&b, targetBytes, searchLength, splittedBeginAddr, 0, &foundAddrs)
 			bufferPool.Put(b)
-			if len(foundAddrs) > 50000 {
+			if len(foundAddrs) > 500000 {
 				fmt.Println("Too many addresses with target data found...")
 				return foundAddrs, TooManyErr{&Err{errors.New("Error: Too many addresses")}}
 			}
