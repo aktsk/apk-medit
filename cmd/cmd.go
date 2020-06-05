@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -38,22 +39,27 @@ func Plist() (string, error) {
 
 	re := regexp.MustCompile(`\s+`)
 	line, err := out.ReadString('\n')
-	pids := []string{}
+	pids := make(map[string]string)
 	for err == nil && len(line) != 0 {
 		s := strings.Split(re.ReplaceAllString(string(line), " "), " ")
 		pid := s[1]
 		cmd := s[8]
 		if pid != "PID" && cmd != "" && cmd != "ps" && cmd != "sh" && cmd != "medit" {
 			fmt.Printf("Package: %s, PID: %s\n", cmd, pid)
-			pids = append(pids, pid)
+			pids[cmd] = pid
 		}
 		line, err = out.ReadString('\n')
 	}
 
-	if len(pids) == 1 {
-		fmt.Printf("Target PID has been set to %s.\n", pids[0])
-		return pids[0], nil
+	current_path, _ := os.Getwd()
+	_, package_name := filepath.Split(current_path)
+	for cmd, pid := range pids {
+		if cmd == package_name {
+			fmt.Printf("Target PID has been set to %s.\n", pid)
+			return pid, nil
+		}
 	}
+
 	return "", nil
 }
 
@@ -98,10 +104,11 @@ func Attach(pid string) error {
 
 func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 	founds := []Found{}
-	// search value in /proc/<pid>/mem
+	// parse /proc/<pid>/map, and get writable area
 	mapsPath := fmt.Sprintf("/proc/%s/maps", pid)
-	memPath := fmt.Sprintf("/proc/%s/mem", pid)
 	addrRanges, err := memory.GetWritableAddrRanges(mapsPath)
+	// search value in /proc/<pid>/mem
+	memPath := fmt.Sprintf("/proc/%s/mem", pid)
 	if err != nil {
 		return nil, err
 	}
@@ -115,6 +122,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				converter: converter.StringToBytes,
 				dataType:  "UTF-8 string",
 			})
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 		fmt.Println("------------------------")
 
@@ -129,6 +138,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 		fmt.Println("------------------------")
 		foundAddrs, err = memory.FindDword(memPath, targetVal, addrRanges)
@@ -141,6 +152,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 		fmt.Println("------------------------")
 		foundAddrs, err = memory.FindQword(memPath, targetVal, addrRanges)
@@ -153,6 +166,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 
 	} else if dataType == "string" {
@@ -166,6 +181,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 
 	} else if dataType == "word" {
@@ -179,6 +196,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 
 	} else if dataType == "dword" {
@@ -192,6 +211,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 
 	} else if dataType == "qword" {
@@ -205,6 +226,8 @@ func Find(pid string, targetVal string, dataType string) ([]Found, error) {
 				})
 			}
 			return founds, nil
+		} else if _, ok := err.(memory.TooManyErr); ok {
+			return founds, err
 		}
 	}
 
@@ -235,7 +258,7 @@ func Filter(pid string, targetVal string, prevFounds []Found) ([]Found, error) {
 			}
 		}
 		foundAddrs, _ := memory.FindDataInAddrRanges(memPath, targetBytes, addrRanges)
-		fmt.Printf("Found: %d!!!\n", len(foundAddrs))
+		fmt.Printf("Found: %d!!\n", len(foundAddrs))
 		if len(foundAddrs) < 10 {
 			for _, v := range foundAddrs {
 				fmt.Printf("Address: 0x%x\n", v)

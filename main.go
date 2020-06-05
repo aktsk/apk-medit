@@ -48,10 +48,7 @@ func executor(in string) {
 			targetVal = inputSlice[2]
 			dataType = inputSlice[1]
 		}
-		foundAddr, err := cmd.Find(appPID, targetVal, dataType)
-		if err != nil {
-			fmt.Println(err)
-		}
+		foundAddr, _ := cmd.Find(appPID, targetVal, dataType)
 		addrCache = foundAddr
 
 	} else if strings.HasPrefix(in, "filter") {
