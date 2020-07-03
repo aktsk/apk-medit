@@ -17,7 +17,7 @@ However, there were no tools available for non-root device and CUI. So I made it
 
 This is a demo that uses apk-medit to clear a game that requires one million taps to clear.
 
-<img src="screenshots/terminal.gif" width=680px> <img src="screenshots/demo-app.gif" width=195px>
+<img src="screenshots/terminal.gif" width=645px> <img src="screenshots/demo-app.gif" width=185px>
 
 ## Installation
 
