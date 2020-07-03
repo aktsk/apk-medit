@@ -2,6 +2,7 @@
 
 [![GitHub release](https://img.shields.io/github/v/release/aktsk/apk-medit.svg)](https://github.com/aktsk/apk-medit/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/aktsk/apk-medit/blob/master/LICENSE)
+[![](https://img.shields.io/badge/Black%20Hat%20Arsenal-USA%202020-blue.svg)](https://www.blackhat.com/us-20/arsenal/schedule/index.html#apk-medit-memory-search-and-patch-tool-for-apk-without-root--android-ndk-21026)
 ![](https://github.com/aktsk/apk-medit/workflows/test/badge.svg)
 
 Apk-medit is a memory search and patch tool for debuggable apk without root & ndk.
@@ -47,6 +48,12 @@ To enable the debuggable attribute, open `AndroidManifest.xml`, add the followin
 
 ```
 android:debuggable="true"
+```
+
+You can also use [aktsk/apkutil](https://github.com/aktsk/apkutil) to easily enable the debuggable attribute without editing `AndroidManifest.xml`, it is useful.
+
+```
+$ apkutil debuggable <target-apk-name>.apk
 ```
 
 After running the `run-as` command, directory is automatically changed. So copy `medit` from `/data/local/tmp/`.
