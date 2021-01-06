@@ -67,6 +67,13 @@ $ cp /data/local/tmp/medit ./medit
 $ ./medit
 ```
 
+You can also choose not to use ptrace when writing to memory.
+This avoids debugger detection by ptrace, but don't work on Android 10 or later due to SELinux.
+
+```
+$ ./medit -without-ptrace
+```
+
 ### Commands
 
 Here are the commands available in an interactive prompt.
@@ -118,6 +125,7 @@ Write the specified value on the address found by search.
 
 ```
 > patch 10
+...
 Successfully patched!
 ```
 
