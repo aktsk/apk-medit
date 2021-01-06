@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -15,6 +16,7 @@ import (
 
 var appPID string
 var addrCache []cmd.Found
+var withoutPtrace bool
 
 func executor(in string) {
 	if in == "ps" {
@@ -74,9 +76,16 @@ func executor(in string) {
 			fmt.Println("Target value cannot be specified.")
 			return
 		}
-		err := cmd.Patch(appPID, slice[1], addrCache)
-		if err != nil {
-			fmt.Println(err)
+		if withoutPtrace {
+			err := cmd.PatchWithoutPtrace(appPID, slice[1], addrCache)
+			if err != nil {
+				fmt.Println(err)
+			}
+		} else {
+			err := cmd.PatchWithPtrace(appPID, slice[1], addrCache)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 
 	} else if in == "detach" {
@@ -143,6 +152,9 @@ func completer(t prompt.Document) []prompt.Suggest {
 }
 
 func main() {
+	flag.BoolVar(&withoutPtrace, "without-ptrace", false, "Memory modification without ptrace, which is not available in Android 10 and later")
+	flag.Parse()
+
 	// for ptrace attach
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()

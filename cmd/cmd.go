@@ -276,7 +276,7 @@ func Filter(pid string, targetVal string, prevFounds []Found) ([]Found, error) {
 	return founds, nil
 }
 
-func Patch(pid string, targetVal string, targetAddrs []Found) error {
+func PatchWithoutPtrace(pid string, targetVal string, targetAddrs []Found) error {
 	memPath := fmt.Sprintf("/proc/%s/mem", pid)
 	f, err := os.OpenFile(memPath, os.O_WRONLY, 0600)
 	if err != nil {
@@ -293,6 +293,27 @@ func Patch(pid string, targetVal string, targetAddrs []Found) error {
 			}
 		}
 	}
+	fmt.Println("Successfully patched!")
+	return nil
+}
+
+func PatchWithPtrace(pid string, targetVal string, targetAddrs []Found) error {
+	if !isAttached {
+		if err := Attach(pid); err != nil {
+			fmt.Println(err)
+		}
+	}
+	for _, found := range targetAddrs {
+		targetBytes, _ := found.converter(targetVal)
+		for _, targetAddr := range found.addrs {
+			tid_int, _ := strconv.Atoi(pid)
+			_, err := sys.PtracePokeData(tid_int, uintptr(targetAddr), targetBytes)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	Detach()
 	fmt.Println("Successfully patched!")
 	return nil
 }
