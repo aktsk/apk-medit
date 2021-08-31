@@ -13,6 +13,7 @@ It was created for mobile game security testing.
 Memory modification is the easiest way to cheat in games, it is one of the items to be checked in the security test.
 There are also cheat tools that can be used casually like GameGuardian.
 However, there were no tools available for non-root device and CUI. So I made it as a security testing tool.
+The version that targets iOS apps is [aktsk/ipa-medit](https://github.com/aktsk/ipa-medit).
 
 ## Demo
 
