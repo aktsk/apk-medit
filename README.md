@@ -7,6 +7,7 @@
 
 Apk-medit is a memory search and patch tool for debuggable apk without root & ndk.
 It was created for mobile game security testing.
+Many mobile games have rooting detection, but apk-medit does not require root privileges, so memory modification can be done without bypassing the rooting detection.
 
 ## Motivation
 
