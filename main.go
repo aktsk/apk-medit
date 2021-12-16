@@ -17,13 +17,18 @@ import (
 var appPID string
 var addrCache []cmd.Found
 var withoutPtrace bool
+var specificPID string
 
 func executor(in string) {
 	if in == "ps" {
-		if pid, err := cmd.Plist(); err != nil {
-			log.Fatal(err)
-		} else if pid != "" {
-			appPID = pid
+		if specificPID == "" {
+			if pid, err := cmd.Plist(); err != nil {
+				log.Fatal(err)
+			} else if pid != "" {
+				appPID = pid
+			}
+		} else {
+			fmt.Printf("The Target PID is already set to %s.\n", specificPID)
 		}
 
 	} else if strings.HasPrefix(in, "attach") {
@@ -153,16 +158,21 @@ func completer(t prompt.Document) []prompt.Suggest {
 
 func main() {
 	flag.BoolVar(&withoutPtrace, "without-ptrace", false, "Memory modification without ptrace, which is not available in Android 10 and later")
+	flag.StringVar(&specificPID, "pid", "", "Attach to a process with this pid")
 	flag.Parse()
 
 	// for ptrace attach
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	if pid, err := cmd.Plist(); err != nil {
-		log.Fatal(err)
-	} else if pid != "" {
-		appPID = pid
+	if specificPID == "" {
+		if pid, err := cmd.Plist(); err != nil {
+			log.Fatal(err)
+		} else if pid != "" {
+			appPID = pid
+		}
+	} else {
+		appPID = specificPID
 	}
 	addrCache = []cmd.Found{}
 	p := prompt.New(
