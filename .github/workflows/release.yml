@@ -16,7 +16,7 @@ jobs:
         with:
           go-version: 1.15.6
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@221e84ac6ad67baf4c50075fe608fd59136dd8fd
         with:
           version: latest
           args: release --rm-dist
