@@ -3,7 +3,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/aktsk/apk-medit.svg)](https://github.com/aktsk/apk-medit/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/aktsk/apk-medit/blob/master/LICENSE)
 [![](https://img.shields.io/badge/Black%20Hat%20Arsenal-USA%202020-blue.svg)](https://www.blackhat.com/us-20/arsenal/schedule/index.html#apk-medit-memory-search-and-patch-tool-for-apk-without-root--android-ndk-21026)
-![](https://github.com/aktsk/apk-medit/workflows/test/badge.svg)
+![](https://github.com/aktsk/apk-medit/actions/workflows/test.yml/badge.svg?branch=master)
 
 Apk-medit is a memory search and patch tool for debuggable apk without root & ndk.
 It was created for mobile game security testing.
