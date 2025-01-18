@@ -16,8 +16,8 @@ import (
 
 	sys "golang.org/x/sys/unix"
 
-	"github.com/aktsk/apk-medit/pkg/converter"
-	"github.com/aktsk/apk-medit/pkg/memory"
+	"github.com/sterrasec/apk-medit/pkg/converter"
+	"github.com/sterrasec/apk-medit/pkg/memory"
 )
 
 var tids []int

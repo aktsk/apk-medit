@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aktsk/apk-medit/cmd"
+	"github.com/sterrasec/apk-medit/cmd"
 
 	prompt "github.com/c-bata/go-prompt"
 )
