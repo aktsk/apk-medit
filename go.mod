@@ -1,4 +1,4 @@
-module github.com/aktsk/apk-medit
+module github.com/sterrasec/apk-medit
 
 go 1.15
 

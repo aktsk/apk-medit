@@ -1,9 +1,9 @@
 # apk-medit
 
-[![GitHub release](https://img.shields.io/github/v/release/aktsk/apk-medit.svg)](https://github.com/aktsk/apk-medit/releases/latest)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/aktsk/apk-medit/blob/master/LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/sterrasec/apk-medit.svg)](https://github.com/sterrasec/apk-medit/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/sterrasec/apk-medit/blob/master/LICENSE)
 [![](https://img.shields.io/badge/Black%20Hat%20Arsenal-USA%202020-blue.svg)](https://www.blackhat.com/us-20/arsenal/schedule/index.html#apk-medit-memory-search-and-patch-tool-for-apk-without-root--android-ndk-21026)
-![](https://github.com/aktsk/apk-medit/actions/workflows/test.yml/badge.svg?branch=master)
+![](https://github.com/sterrasec/apk-medit/actions/workflows/test.yml/badge.svg?branch=master)
 
 Apk-medit is a memory search and patch tool for debuggable apk without root & ndk.
 It was created for mobile game security testing.
@@ -14,7 +14,7 @@ Many mobile games have rooting detection, but apk-medit does not require root pr
 Memory modification is the easiest way to cheat in games, it is one of the items to be checked in the security test.
 There are also cheat tools that can be used casually like GameGuardian.
 However, there were no tools available for non-root device and CUI. So I made it as a security testing tool.
-The version that targets iOS apps is [aktsk/ipa-medit](https://github.com/aktsk/ipa-medit).
+The version that targets iOS apps is [sterrasec/ipa-medit](https://github.com/sterrasec/ipa-medit).
 
 ## Demo
 
@@ -24,7 +24,7 @@ This is a demo that uses apk-medit to clear a game that requires one million tap
 
 ## Installation
 
-Download the binary from [GitHub Releases](https://github.com/aktsk/apk-medit/releases/), please push the binary in `/data/local/tmp/` on an android device.
+Download the binary from [GitHub Releases](https://github.com/sterrasec/apk-medit/releases/), please push the binary in `/data/local/tmp/` on an android device.
 
 ```
 $ adb push medit /data/local/tmp/medit
@@ -52,7 +52,7 @@ To enable the debuggable attribute, open `AndroidManifest.xml`, add the followin
 android:debuggable="true"
 ```
 
-You can also use [aktsk/apkutil](https://github.com/aktsk/apkutil) to easily enable the debuggable attribute without editing `AndroidManifest.xml`, it is useful.
+You can also use [sterrasec/apkutil](https://github.com/sterrasec/apkutil) to easily enable the debuggable attribute without editing `AndroidManifest.xml`, it is useful.
 
 ```
 $ apkutil debuggable <target-apk-name>.apk
@@ -137,7 +137,7 @@ Find the target process and if there is only one, specify it as the target. `ps`
 
 ```
 > ps
-Package: jp.aktsk.tap1000000, PID: 4398
+Package: jp.sterrasec.tap1000000, PID: 4398
 Target PID has been set to 4398.
 ```
 
